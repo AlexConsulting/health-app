@@ -5,7 +5,7 @@ const currentDateTimeElement = document.getElementById('current-datetime');
 const logoutButton = document.getElementById('logout-button');
 const appointmentList = document.getElementById('agendamentos-list');
 const pendenciasList = document.getElementById('pendencias-list');
-// NOVO: Elementos para o Toggle do Menu
+// Elementos para o Toggle do Menu
 const menuToggle = document.getElementById('menu-toggle');
 const sidebar = document.querySelector('.sidebar');
 
@@ -22,12 +22,14 @@ function updateDateTime() {
 }
 
 // =========================================================================
-// NOVO: LÓGICA DE RESPONSIVIDADE (SIDEBAR TOGGLE)
+// CORREÇÃO CRUCIAL: LÓGICA DE RESPONSIVIDADE (SIDEBAR TOGGLE)
 // =========================================================================
 
 function setupSidebarToggle() {
     if (menuToggle && sidebar) {
-        menuToggle.addEventListener('click', () => {
+        // 🚨 CORREÇÃO: Adicionando 'event.preventDefault()' para evitar que o clique no botão cause um comportamento padrão (como um recarregamento/flicker)
+        menuToggle.addEventListener('click', (event) => {
+            event.preventDefault(); // Evita o comportamento padrão do botão
             // Adiciona ou remove a classe 'open' que o CSS usa para mostrar/esconder
             sidebar.classList.toggle('open');
         });
@@ -107,14 +109,10 @@ async function loadUnits(token) {
     }
 }
 
-/**
- * 🎯 CORREÇÃO: Atualizada para refletir os 6 novos IDs de cards KPI no dashboard.html.
- */
 function renderKpis(data) {
     document.getElementById('total-medicos').textContent = data.totalMedicos || '0';
     document.getElementById('agendamentos-semana').textContent = data.agendamentosSemana || '0';
     
-    // IDs DE KPI NOVOS/ATUALIZADOS
     document.getElementById('treinamentos-pre-agendados-semana').textContent = data.treinamentosPreAgendadosSemana || '0';
     document.getElementById('treinamentos-realizados-semana').textContent = data.treinamentosRealizadosSemana || '0';
     document.getElementById('convites-enviados-semana').textContent = data.convitesEnviadosSemana || '0';
@@ -123,7 +121,6 @@ function renderKpis(data) {
 }
 
 async function loadKpis(token) {
-    // Endpoint /api/dashboard/kpis no backend precisa retornar as 6 novas métricas (totalMedicos, agendamentosSemana, etc.)
     const data = await fetchAuthenticatedData('/api/dashboard/kpis', token); 
     if (data) {
         renderKpis(data);
@@ -132,14 +129,10 @@ async function loadKpis(token) {
     }
 }
 
-/**
- * 🎯 CORREÇÃO: Remoção total da lógica de buscar e exibir "Agendamentos Pendentes (Lote)".
- * Mantém apenas o item "Termos não lidos" (simulado).
- */
 async function loadOperationalPendencies(token) {
     if (!token) return;
 
-    pendenciasList.innerHTML = ''; // Limpa a lista.
+    pendenciasList.innerHTML = '';
     
     try {
         // Adiciona o item Termos não lidos (simulado)
@@ -239,7 +232,7 @@ function initializeDashboard() {
     
     welcomeMessage.textContent = `Olá, ${userName}`;
     
-    // NOVO: Inicializa a lógica de toggle do menu
+    // Inicializa a lógica de toggle do menu
     setupSidebarToggle();
     
     updateDateTime();
