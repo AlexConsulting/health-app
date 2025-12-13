@@ -17,9 +17,19 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* 🛑 CORREÇÃO CRUCIAL: Retira as regras de Flexbox e Padding para permitir o layout do Dashboard em tela cheia */
 body {
     background-color: var(--color-primary);
     color: var(--color-text-dark);
+    /* display: flex;        <--- REMOVIDO */
+    /* justify-content: center; <--- REMOVIDO */
+    /* align-items: center;     <--- REMOVIDO */
+    min-height: 100vh;
+    /* padding: 20px;         <--- REMOVIDO */
+}
+
+/* NOVO: Classe para centralizar APENAS o conteúdo da página de Login */
+.login-page-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -318,9 +328,9 @@ body {
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     
     /* MOBILE: Oculta a sidebar fora da tela */
-    position: fixed;
+    position: fixed; /* ESSENCIAL */
     height: 100vh;
-    left: -250px; 
+    left: -250px; /* ESSENCIAL: Esconde fora da tela */
     top: 0;
     z-index: 1000;
     transition: left 0.3s ease-in-out;
