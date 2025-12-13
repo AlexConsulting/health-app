@@ -1,0 +1,395 @@
+/* public/css/dashboard.css */
+
+/* Estrutura Geral */
+.app-shell {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Sidebar (Menu) */
+.sidebar {
+    width: 250px;
+    background-color: var(--color-primary);
+    color: var(--color-text-light);
+    padding: 20px 0;
+    transition: width 0.3s;
+    flex-shrink: 0;
+    /* Ocultar em mobile por padrão */
+    display: none; 
+}
+
+.logo-area {
+    text-align: center;
+    padding: 10px 0 30px;
+    font-size: 1.5em;
+    font-weight: 700;
+}
+
+.main-nav ul {
+    list-style: none;
+    padding: 0 15px;
+}
+
+.main-nav li a {
+    display: block;
+    color: #b0c0d9; /* Cor clara para links inativos */
+    text-decoration: none;
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    border-radius: 8px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.main-nav li a:hover,
+.main-nav li.active a {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-secondary);
+}
+
+.main-nav i {
+    margin-right: 10px;
+    width: 20px;
+}
+
+/* Conteúdo Principal */
+.main-content {
+    flex-grow: 1;
+    background-color: var(--color-background-card);
+    padding: 20px;
+}
+
+/* Top Bar (Header) */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.user-info {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--color-primary);
+}
+
+.current-datetime {
+    display: block;
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.btn-logout {
+    background-color: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-logout:hover {
+    background-color: #dc3545;
+    color: var(--color-text-light);
+}
+
+/* Cards e Grid */
+.dashboard-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--color-text-light);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+}
+
+/* Cards KPI */
+.kpi-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+}
+
+.kpi-card {
+    flex: 1 1 180px; /* Base para 4 colunas em desktop */
+    text-align: center;
+}
+
+.kpi-card i {
+    font-size: 2em;
+    color: var(--color-secondary);
+    margin-bottom: 10px;
+}
+
+/* NOVO: Estilo para o ícone de Treinamento */
+.fa-chalkboard-teacher {
+    color: var(--color-primary); 
+}
+
+.kpi-card h2 {
+    font-size: 2.2em;
+    margin-top: 5px;
+    color: var(--color-primary);
+}
+
+.kpi-card p {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* Cards Operacionais */
+.operational-card {
+    flex: 1 1 calc(50% - 10px); /* Ocupa metade em desktop */
+}
+
+.full-width {
+    flex: 1 1 100%; /* Ocupa largura total */
+}
+
+.half-width {
+    min-width: 300px;
+}
+
+.operational-card h3 {
+    border-bottom: 2px solid var(--color-secondary);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.scrollable-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px; /* Para espaço da barra de rolagem */
+}
+
+.list-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.simple-list {
+    list-style: none;
+}
+
+.simple-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* NOVO: Estilo para o Bloco de Filtros Operacionais (Agendamentos) */
+.appointment-filters {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f0f0f0; 
+    border-radius: 8px;
+}
+
+.appointment-filters label {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.appointment-filters .filter-input {
+    flex-grow: 1; 
+    min-width: 150px;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Mobile-First Adjustments */
+@media (min-width: 768px) {
+    .sidebar {
+        display: block; /* Exibe sidebar em tablets e desktop */
+    }
+    .main-content {
+        padding: 30px;
+    }
+}
+
+@media (max-width: 767px) {
+    .app-shell {
+        flex-direction: column;
+    }
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .user-info {
+        margin-bottom: 10px;
+    }
+    .operational-card, .half-width, .kpi-card {
+        flex: 1 1 100%; /* Empilha tudo em mobile */
+    }
+    
+    /* Ajuste para filtros em mobile */
+    .appointment-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .appointment-filters label, .appointment-filters .filter-input {
+        width: 100%;
+    }
+}
+/* --- Melhorias no Layout de Filtros (APLICADO) --- */
+
+/* 1. Container principal para estilizar e agrupar os filtros e o botão de lote */
+.filter-bar-container {
+    /* **NOVO: Flexbox para alinhar o grupo de filtros (esquerda) e o botão de lote (direita)** */
+    display: flex;
+    justify-content: space-between; /* Empurra o botão de lote para a direita */
+    align-items: flex-end; /* Alinha os blocos pela base (inputs/botões ficam alinhados) */
+    
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    background-color: #fcfcfc;
+}
+
+/* 2. Flexbox para alinhar todos os controles de filtro e o botão de busca (bloco esquerdo) */
+.filter-controls {
+    display: flex;
+    gap: 15px; /* Espaçamento entre cada filtro */
+    align-items: flex-end; /* Alinha todos os itens pela base */
+    flex-wrap: wrap; 
+}
+
+/* 3. Estilo para cada grupo de filtro (Label + Input) */
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* 4. Estilo geral para Inputs e Selects */
+.input-filter {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    height: 38px; /* Altura fixa para alinhar com o botão de busca e lote */
+}
+
+/* 5. Estilo do botão de Busca para alinhamento */
+.search-button {
+    width: auto !important; 
+    padding: 10px 20px !important;
+    white-space: nowrap;
+    height: 38px; /* Altura igual aos campos de input */
+}
+
+/* 6. Estilo para a área do botão de Lote (bloco direito) */
+.lote-action-area {
+    display: flex;
+    align-items: flex-end;
+}
+
+/* 7. Ajusta a altura do botão de Lote para ficar na mesma linha dos inputs/busca */
+#lote-button {
+    height: 38px; 
+    padding: 0 15px;
+}
+
+/* Estilo geral para Inputs e Selects */
+.input-filter {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    height: 38px; /* Altura fixa para alinhar com o botão */
+}
+
+/* Ajuste o botão de busca para que não ocupe 100% da largura */
+.search-button {
+    width: auto !important; 
+    padding: 10px 20px !important;
+    white-space: nowrap;
+    height: 38px; /* Altura igual aos campos de input */
+}
+/* FIM da seção de Filtros da página de Agendamentos (anteriormente com erro de sintaxe) */
+
+
+/* --- Layout Específico para Agendamento em Lote --- */
+
+.lote-layout-container {
+    display: flex;
+    gap: 25px; /* Espaço entre as duas colunas */
+    align-items: flex-start; /* Alinha os itens pelo topo */
+}
+
+/* Tabela de Médicos (Lado Esquerdo): Ocupa mais espaço */
+.lote-layout-container .list-container {
+    flex: 3; /* Ocupa 3 partes do espaço disponível (aprox. 75%) */
+    min-width: 0; 
+}
+
+/* Formulário de Detalhes (Lado Direito): Ocupa menos espaço */
+.lote-layout-container .form-container {
+    flex: 1; /* Ocupa 1 parte do espaço disponível (aprox. 25%) */
+    position: sticky; /* Mantém o formulário visível durante o scroll da tabela */
+    top: 20px; /* Distância do topo */
+}
+
+/* Melhoria no grid do formulário */
+.form-group-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas para data e horário */
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Ações do Formulário (Botões) */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+/* Habilita a rolagem (scroll) na tabela de médicos para evitar que a página toda role */
+.table-scroll {
+    max-height: 600px; /* Altura máxima para a tabela */
+    overflow-y: auto; 
+}
+
+.data-table {
+    width: 100%;
+}
+
+/* Mobile: Transforma tudo em coluna única */
+@media (max-width: 1024px) {
+    .lote-layout-container {
+        flex-direction: column;
+    }
+    .lote-layout-container .list-container,
+    .lote-layout-container .form-container {
+        flex: 1 1 100%; /* Ocupa largura total */
+        min-width: 100%;
+    }
+    .lote-layout-container .form-container {
+        position: static; /* Remove sticky em mobile */
+        top: auto;
+    }
+}
