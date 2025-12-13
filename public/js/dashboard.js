@@ -4,7 +4,10 @@ const welcomeMessage = document.getElementById('welcome-message');
 const currentDateTimeElement = document.getElementById('current-datetime');
 const logoutButton = document.getElementById('logout-button');
 const appointmentList = document.getElementById('agendamentos-list');
-const pendenciasList = document.getElementById('pendencias-list'); 
+const pendenciasList = document.getElementById('pendencias-list');
+// NOVO: Elementos para o Toggle do Menu
+const menuToggle = document.getElementById('menu-toggle');
+const sidebar = document.querySelector('.sidebar');
 
 // Função para atualizar data e hora
 function updateDateTime() {
@@ -17,6 +20,31 @@ function updateDateTime() {
     
     currentDateTimeElement.textContent = `${date} | ${time}`;
 }
+
+// =========================================================================
+// NOVO: LÓGICA DE RESPONSIVIDADE (SIDEBAR TOGGLE)
+// =========================================================================
+
+function setupSidebarToggle() {
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', () => {
+            // Adiciona ou remove a classe 'open' que o CSS usa para mostrar/esconder
+            sidebar.classList.toggle('open');
+        });
+        
+        // Opcional: Fechar o menu ao clicar em um link (útil no mobile)
+        const navLinks = sidebar.querySelectorAll('.main-nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                // Fecha a sidebar após o clique no mobile
+                if (sidebar.classList.contains('open') && window.innerWidth < 768) {
+                     sidebar.classList.remove('open');
+                }
+            });
+        });
+    }
+}
+
 
 // =========================================================================
 // FUNÇÕES DE REQUISIÇÃO E AUTENTICAÇÃO
@@ -210,6 +238,9 @@ function initializeDashboard() {
     }
     
     welcomeMessage.textContent = `Olá, ${userName}`;
+    
+    // NOVO: Inicializa a lógica de toggle do menu
+    setupSidebarToggle();
     
     updateDateTime();
     setInterval(updateDateTime, 60000); 
