@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Cadastro de Usuário</title>
+    <link rel="stylesheet" href="css/style.css"> 
+    </head>
+<body>
+
+    <div class="login-container">
+        
+        <div class="header">
+            <div class="logo-icon">➕</div>
+            <h1>Cadastrar Novo Acesso</h1>
+            <p>Apenas para Administradores e Operadores.</p>
+        </div>
+
+        <div id="message-area"></div>
+
+        <form id="registerForm">
+            
+            <div class="form-group">
+                <label for="name">Nome Completo</label>
+                <input type="text" id="name" name="nome" placeholder="Seu nome" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" placeholder="E-mail de acesso" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="senha" placeholder="Crie uma senha forte" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                Finalizar Cadastro
+            </button>
+        </form>
+
+        <div class="secondary-actions">
+            <a href="login.html">Já tenho conta. Voltar para o Login</a>
+        </div>
+        
+    </div>
+
+    <script src="js/register.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ativação de Senha - Escolha de Horário</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 600px; margin-top: 50px; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .slot { cursor: pointer; margin: 5px; }
+        .slot:hover { background-color: #e2e6ea; }
+        .slot.selected { background-color: #007bff; color: white; border-color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center mb-4">Agendamento de Ativação de Senha</h2>
+        <p class="text-center text-muted">Selecione uma data e horário disponível para o seu Meet de 15 minutos (14h às 16h).</p>
+
+        <input type="hidden" id="medicoId" value="">
+        <input type="hidden" id="medicoTelefone" value="">
+        <input type="hidden" id="medicoCrm" value="">
+        <input type="hidden" id="tokenConvite" value=""> 
+        
+        <div class="form-group">
+            <label for="dataSelecao">Selecione a Data:</label>
+            <input type="date" id="dataSelecao" class="form-control" required disabled> 
+            </div>
+
+        <div class="alert alert-info" id="statusMessage">Validando convite...</div>
+        
+        <div id="slotsContainer" class="row justify-content-center">
+            </div>
+
+        <button id="btnAgendar" class="btn btn-success btn-block mt-4" disabled>
+            Agendar Horário Selecionado
+        </button>
+        
+        <div class="mt-3 text-center">
+            <div id="loading" class="spinner-border text-primary" role="status" style="display:none;">
+                <span class="sr-only">Carregando...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/ativacao-senha.js"></script>
+</body>
+</html>

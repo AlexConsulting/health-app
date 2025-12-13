@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmação de Treinamento - Health App</title>
+    <link rel="stylesheet" href="css/style.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* Estilos específicos para a página pública de seleção */
+        body {
+            background-color: #f4f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .public-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .header-icon {
+            font-size: 3rem;
+            color: #007bff; /* Cor primária */
+            margin-bottom: 20px;
+        }
+        .info-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .info-card p {
+            margin: 5px 0;
+            font-size: 0.95rem;
+        }
+        .info-card strong {
+            color: #495057;
+        }
+        .loading-state, .error-state, .success-state {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .error-state {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success-state {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.1rem;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="public-container">
+        <div class="header-icon">⚕️</div>
+        <h2 id="page-title">Agendamento de Treinamento</h2>
+
+        <div id="info-area" class="info-card" style="display: none;">
+            <p><strong>Médico(a):</strong> <span id="medico-nome"></span></p>
+            <p><strong>Unidade:</strong> <span id="unidade-nome"></span></p>
+            <p><strong>Certificações:</strong> <span id="certificacoes"></span></p>
+        </div>
+
+        <form id="selecao-data-form" style="display: none;">
+            <p>Selecione abaixo a data de sua preferência para realizar a integração:</p>
+            
+            <div class="form-group">
+                <label for="data-selecionada">Data e Horário (Sempre às 15h):</label>
+                <select id="data-selecionada" required class="form-control">
+                    <option value="">Selecione uma data disponível</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submit-button" class="btn btn-primary">
+                <i class="fas fa-calendar-alt"></i> Confirmar Seleção
+            </button>
+        </form>
+
+        <div id="status-message" class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i> Carregando dados do convite...
+        </div>
+
+    </div>
+
+    <script src="js/selecionar-data.js"></script>
+</body>
+</html>

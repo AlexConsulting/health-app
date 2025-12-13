@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Dashboard Operacional</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li class="active"><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
+                 
+                    <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
+                    <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="user-info">
+                    <span id="welcome-message">Olá, [Nome do Usuário]</span>
+                    <span class="current-datetime" id="current-datetime"></span>
+                </div>
+                <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </header>
+
+            <section class="dashboard-grid">
+                
+                <div class="kpi-cards">
+                    
+                    <div class="card kpi-card">
+                        <i class="fas fa-hospital-user"></i>
+                        <p>Médicos Cadastrados</p>
+                        <h2 id="total-medicos">0</h2>
+                    </div>
+                    
+                    <div class="card kpi-card">
+                        <i class="fas fa-calendar-week"></i>
+                        <p>Agendamentos da Semana</p>
+                        <h2 id="agendamentos-semana">0</h2>
+                    </div>
+                    
+                    <div class="card kpi-card">
+                        <i class="fas fa-user-clock"></i>
+                        <p>Treinamentos Pré Agendados (Semana)</p>
+                        <h2 id="treinamentos-pre-agendados-semana">0</h2>
+                    </div>
+                    
+                    <div class="card kpi-card">
+                        <i class="fas fa-clipboard-check"></i>
+                        <p>Treinamentos Realizados (Semana)</p>
+                        <h2 id="treinamentos-realizados-semana">0</h2>
+                    </div>
+                    
+                    <div class="card kpi-card">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <p>Convites Enviados (Semana)</p>
+                        <h2 id="convites-enviados-semana">0</h2>
+                    </div>
+                    
+                    <div class="card kpi-card">
+                        <i class="fas fa-handshake"></i>
+                        <p>Atendimentos (Ano)</p>
+                        <h2 id="atendimentos-ano">0</h2>
+                    </div>
+                </div>
+
+                <div class="card operational-card full-width">
+                    <h3>🔍 Pesquisa de Agendamentos</h3>
+                    
+                    <div class="list-filters appointment-filters">
+                        <label for="appointment-date">Data:</label>
+                        <input type="date" id="appointment-date" class="filter-input">
+                        
+                        <label for="appointment-unit">Unidade:</label>
+                        <select id="appointment-unit" class="filter-input">
+                            <option value="">Todas as Unidades</option>
+                            </select>
+                        
+                        <button class="btn-primary small">Buscar Agendamentos</button>
+                    </div>
+
+                    <div class="scrollable-list" id="agendamentos-list">
+                         <p class="placeholder-text">Use o filtro acima para buscar agendamentos específicos.</p>
+                    </div>
+                </div>
+                
+                <div class="card operational-card half-width">
+                    <h3>⚠️ Pendências Operacionais</h3>
+                    <ul class="simple-list" id="pendencias-list">
+                        <li>Termos não lidos: <span>5</span></li>
+                    </ul>
+                </div>
+                
+                <div class="card operational-card half-width">
+                    <h3>📢 Últimos Comunicados</h3>
+                    <ul class="simple-list" id="comunicados-list">
+                        <li>Novo termo de LGPD (01/12)</li>
+                        <li>Mudança de Horário na Unidade X (05/12)</li>
+                    </ul>
+                </div>
+
+            </section>
+        </main>
+        
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Agendamentos Pendentes</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos (Geral)</a></li>
+                    <li class="active"><a href="/agendamentos-pendentes.html"><i class="fas fa-hourglass-half"></i> Pendentes (Lote)</a></li>
+                    <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
+                    <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="user-info">
+                    <span id="welcome-message">Olá, [Nome do Usuário]</span>
+                    <span class="current-datetime" id="current-datetime"></span>
+                </div>
+                <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </header>
+
+            <section class="content-section">
+                <div class="card full-width">
+                    <h2>⏳ Agendamentos Pendentes para Processamento</h2>
+                    <p class="subtitle">Selecione os médicos abaixo para definir uma data/hora de treinamento em lote.</p>
+                    
+                    <div class="filter-bar-container">
+                        <div class="filter-controls">
+                            <div class="filter-group" style="flex-grow: 1;">
+                                <label for="lote-data">Data do Agendamento (Lote)</label>
+                                <input type="date" id="lote-data" class="filter-input" required>
+                            </div>
+                            <div class="filter-group" style="flex-grow: 1;">
+                                <label for="lote-horario">Horário do Agendamento (Lote)</label>
+                                <input type="time" id="lote-horario" class="filter-input" required>
+                            </div>
+                            <button id="agendamento-lote-button" class="btn-primary" style="min-width: 250px;">
+                                <i class="fas fa-calendar-check"></i> Agendar Selecionados em Lote
+                            </button>
+                        </div>
+                        <div id="message-area-lote" class="message-area" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr style="background-color: #f8f9fa;">
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all"></th>
+                                    <th>ID Agendamento</th>
+                                    <th>Nome do Médico</th>
+                                    <th>CRM</th>
+                                    <th>Unidade</th>
+                                    <th>Conteúdo</th>
+                                    <th>Data Criação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agendamentos-table-body">
+                                <tr><td colspan="7" class="placeholder-text" style="text-align: center; padding: 20px;">Carregando agendamentos pendentes...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="no-data-message" class="placeholder-text" style="text-align: center; padding: 20px; display: none;">
+                        Nenhum médico encontrado com agendamento pendente.
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+        
+    </div>
+
+    <script src="js/agendamentos-pendentes.js"></script>
+    <script>
+        function getToken() {
+            const token = localStorage.getItem('userToken');
+            const userName = localStorage.getItem('userName');
+            if (!token || !userName) {
+                window.location.href = '/login.html';
+                return null;
+            }
+            document.getElementById('welcome-message').textContent = `Olá, ${userName}`;
+            document.getElementById('current-datetime').textContent = new Date().toLocaleString('pt-BR');
+            return token;
+        }
+
+        document.getElementById('logout-button').addEventListener('click', () => {
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userName');
+            window.location.href = '/login.html';
+        });
+
+        getToken();
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Login de Acesso</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="login-container">
+        
+        <div class="header">
+            <div class="logo-icon">⚕️</div>
+            <h1>Health App Management</h1>
+            <p>Acesso ao Painel Operacional</p>
+        </div>
+
+        <div id="message-area"></div>
+
+        <form id="loginForm">
+            
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" placeholder="Seu e-mail de acesso" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="senha" placeholder="Sua senha secreta" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                Acessar Dashboard
+            </button>
+        </form>
+
+        <div class="secondary-actions">
+            <a href="#" id="reset-link">Esqueci minha senha</a>
+            <a href="#" id="register-link">Cadastrar novo usuário de acesso</a>
+        </div>
+        
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>

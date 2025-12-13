@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Cadastro Médico</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Estilos específicos para a organização do formulário */
+        .form-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Espaço entre os fieldsets */
+        }
+        fieldset {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 0;
+            position: relative;
+        }
+        legend {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+            padding: 0 10px;
+            margin-left: -5px; 
+        }
+        
+        /* 💡 CORREÇÃO 1: Estrutura do Grid */
+        .form-grid {
+            display: grid;
+            /* Garante pelo menos 2 colunas de 300px em telas maiores */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 15px;
+        }
+        
+        /* 💡 CORREÇÃO 2: Faz o grupo de checkboxes e a textarea ocuparem a largura total */
+        .form-group.full-width {
+            grid-column: 1 / -1; 
+        }
+        
+        /* Otimiza o layout interno dos checkboxes */
+        .checkbox-container-group {
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px 30px; /* Mais espaço horizontal entre os itens */
+            padding-top: 5px; /* Espaço para separar do label acima */
+        }
+
+        /* Garante que a textarea ocupe 100% do espaço da célula */
+        .form-group.full-width textarea {
+            width: 100%;
+            box-sizing: border-box; /* Inclui padding e border no width */
+        }
+        
+        /* Estilo para desativar a seção de treinamento durante a EDIÇÃO (UX) */
+        .fieldset-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .fieldset-disabled::after {
+            content: "Treinamento só é alterado na tela de Agendamentos (Geral)";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #c00;
+            border-radius: 8px;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+             <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    
+                    <li class="active"><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
+                    
+                </ul>
+            </nav>
+            <div class="user-info">
+                <span id="welcome-message">Olá, Usuário</span>
+                <button id="logout-button" class="btn-secondary small"><i class="fas fa-sign-out-alt"></i> </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h2 id="page-title"><i class="fas fa-user-md"></i> Cadastro de Novo Médico</h2>
+            </header>
+
+            <section class="page-section">
+                <div class="card full-width">
+                    <form id="medico-form" class="form-content">
+                        
+                        <fieldset>
+                            <legend>Dados Pessoais e Contato</legend>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="nome">Nome Completo <span class="required">*</span></label>
+                                    <input type="text" id="nome" name="nome" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="data_nasc">Data de Nascimento</label>
+                                    <input type="date" id="data_nasc" name="data_nasc">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cpf">CPF</label>
+                                    <input type="text" id="cpf" name="cpf" maxlength="14" placeholder="000.000.000-00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">E-mail</label>
+                                    <input type="email" id="email" name="email">
+                                </div>
+                                <div class="form-group">
+                                    <label for="telefone">Telefone</label>
+                                    <input type="tel" id="telefone" name="telefone" maxlength="15" placeholder="(00) 00000-0000">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>Informações Profissionais e Operacionais</legend>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="unidade_id">Unidade Principal <span class="required">*</span></label>
+                                    <select id="unidade_id" name="unidade_id" required>
+                                        <option value="">Selecione a Unidade</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="crm">CRM <span class="required">*</span></label>
+                                    <input type="text" id="crm" name="crm" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="especialidade">Especialidade <span class="required">*</span></label>
+                                    <input type="text" id="especialidade" name="especialidade" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rqe">RQE (Registro de Qualificação)</label>
+                                    <input type="text" id="rqe" name="rqe">
+                                </div>
+                                <div class="form-group">
+                                    <label for="empresa">Empresa Contratante</label>
+                                    <input type="text" id="empresa" name="empresa">
+                                </div>
+                                
+                                <div class="form-group full-width">
+                                    <label>Áreas de Atuação (Selecione onde atende):</label>
+                                    <div class="checkbox-container-group">
+                                        <label class="checkbox-container">Porta
+                                            <input type="checkbox" id="porta" name="porta">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <label class="checkbox-container">Emergência
+                                            <input type="checkbox" id="emergencia" name="emergencia">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <label class="checkbox-container">Enfermaria
+                                            <input type="checkbox" id="enfermaria" name="enfermaria">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <label class="checkbox-container">Ambulatório
+                                            <input type="checkbox" id="ambulatorio" name="ambulatorio">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <label class="checkbox-container">UTI
+                                            <input type="checkbox" id="uti" name="uti">
+                                            <span class="checkmark"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="observacao">Observações Internas</label>
+                                    <textarea id="observacao" name="observacao" rows="6"></textarea>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                                                
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="submit-button">
+                                <i class="fas fa-save"></i> Concluir Cadastro
+                            </button>
+                            <div id="message-area" class="message-area"></div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+        
+    </div>
+
+    <script src="js/medicos-cadastro.js"></script>
+</body>
+</html>

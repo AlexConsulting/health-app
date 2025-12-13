@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Listagem de Médicos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* ESTILOS ESSENCIAIS PARA GARANTIR ALINHAMENTO E TAMANHO COMPACTO DO FILTRO DE UNIDADE */
+
+        /* 1. Container Principal (Alinhamento Filtro vs. Botão Novo Cadastro) */
+        .list-actions {
+            display: flex;
+            justify-content: space-between; /* Alinha o filtro à esquerda e o botão à direita */
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap; 
+        }
+
+        /* 2. Grupo de Filtros (Agora, apenas o Select) */
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0; 
+        }
+
+        /* 3. Controle de Tamanho do Campo Select (Compacto e não estica) */
+        .filter-group #filter-unidade {
+            /* Tamanho fixo para garantir que não fique gigante. */
+            width: 200px; 
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex-shrink: 0; 
+        }
+
+        /* 4. Tabela (Ajuste para 6 Colunas: Nome, CRM, Telefone, Especialidade, Unidade, Ações) */
+        .data-table th, .data-table td {
+            padding: 12px; 
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Alinhamento dos Dados (esquerda para texto) */
+        .data-table thead th, .data-table tbody td {
+            text-align: left;
+        }
+        
+        /* Ajuste de largura das 6 colunas */
+        .data-table thead th:nth-child(1) { width: 25%; } /* Nome */
+        .data-table thead th:nth-child(2) { width: 10%; } /* CRM */
+        .data-table thead th:nth-child(3) { width: 15%; } /* Telefone */
+        .data-table thead th:nth-child(4) { width: 20%; } /* Especialidade */
+        .data-table thead th:nth-child(5) { width: 20%; } /* Unidade */
+        
+        /* Centraliza a última coluna (Ações) */
+        .data-table thead th:last-child, .data-table tbody td:last-child {
+             text-align: center;
+             width: 10%;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li class="active"><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
+                    <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
+                    <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="user-info">
+                    <span id="welcome-message">Olá, [Nome do Usuário]</span>
+                    <span class="current-datetime" id="current-datetime"></span>
+                </div>
+                <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </header>
+
+            <section class="list-container">
+                <div class="card full-width">
+                    <h2>📋 Médicos Cadastrados</h2>
+                    <p class="subtitle">Lista completa de profissionais ativos no sistema e ferramentas de gestão.</p>
+                    
+                    <div class="list-actions">
+                        
+                        <div class="filter-group">
+                            
+                            <select id="filter-unidade" class="input-filter">
+                                <option value="">Todas as Unidades</option>
+                                </select>
+                            
+                            </div>
+                        
+                        <a href="/medicos-cadastro.html" class="btn-secondary small">
+                            <i class="fas fa-plus"></i> Novo Cadastro
+                        </a>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CRM</th>
+                                    <th>Telefone</th> 
+                                    <th>Especialidade</th>
+                                    <th>Unidade</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="medicos-table-body">
+                                <tr><td colspan="6" class="placeholder-text">Carregando dados dos médicos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="pagination-controls" class="pagination-controls">
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+        
+    </div>
+
+    <script src="js/medicos-lista.js"></script>
+</body>
+</html>

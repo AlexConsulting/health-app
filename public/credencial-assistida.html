@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ativação de Credencial Assistida</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .container { max-width: 800px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        .result-box { padding: 20px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; margin-top: 15px; }
+        .result-box p { margin: 10px 0; font-size: 1.1em; }
+        .result-box strong { color: #333; display: inline-block; width: 150px; }
+        #link-ativacao-value { word-break: break-all; color: #dc3545; font-weight: bold; }
+        .btn-copy { margin-left: 10px; background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+        .message-area { margin-top: 20px; padding: 10px; border-radius: 4px; text-align: center; }
+        .message-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2><i class="fas fa-key"></i> Processo de Credencial Assistida</h2>
+    
+    <p id="medico-info">Carregando informações do agendamento...</p>
+
+    <button id="gerar-credenciais-btn" class="btn btn-primary" disabled>Gerar Usuário e Link de Ativação</button>
+    <button id="finalizar-processo-btn" class="btn btn-success" style="display:none;">Finalizar e Marcar como Enviado</button>
+    
+    <div id="resultado-credenciais" class="result-box" style="display:none;">
+        <p><strong>Usuário de Acesso:</strong> <span id="usuario-acesso-value"></span></p>
+        <p><strong>Link de Ativação:</strong> 
+            <span id="link-ativacao-value"></span>
+            <button class="btn-copy" onclick="copyToClipboard('link-ativacao-value')"><i class="fas fa-copy"></i> Copiar</button>
+        </p>
+        <small class="text-danger">Atenção: Use estas informações APENAS durante o processo assistido.</small>
+    </div>
+
+    <div id="message-area" class="message-area"></div>
+</div>
+
+<script src="js/credencial-assistida.js"></script>
+<script>
+    // Função utilitária de cópia
+    function copyToClipboard(elementId) {
+        const textToCopy = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert('Copiado: ' + textToCopy);
+        }).catch(err => {
+            console.error('Erro ao copiar:', err);
+        });
+    }
+</script>
+</body>
+</html>

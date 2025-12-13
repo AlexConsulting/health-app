@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Envio de Comunicados</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
+                 
+                    <li class="active"><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
+                    <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="user-info">
+                    <span id="welcome-message">Olá, [Nome do Usuário]</span>
+                    <span class="current-datetime" id="current-datetime"></span>
+                </div>
+                <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </header>
+
+            <section class="page-header">
+                <h2>Envio de Comunicados</h2>
+                <p>Crie e envie comunicados oficiais para médicos específicos ou para toda a base.</p>
+            </section>
+            
+            <section class="card-grid">
+                
+                <div class="card full-width">
+                    <h3>Criar Novo Comunicado</h3>
+                    
+                    <form id="comunicado-form">
+                        
+                        <div class="form-group">
+                            <label for="comunicado-titulo">Título (Para Referência Interna):</label>
+                            <input type="text" id="comunicado-titulo" required placeholder="Ex: Novo Termo de LGPD" style="width: 100%;" />
+                        </div>
+
+                        <div class="form-group-inline">
+                            
+                            <div class="form-group" style="flex-basis: 30%;">
+                                <label for="publico-alvo">Público Alvo:</label>
+                                <select id="publico-alvo" required style="width: 100%;">
+                                    <option value="">Selecione...</option>
+                                    <option value="TODOS_MEDICOS">Todos os Médicos Cadastrados</option> <option value="EMPRESA">Por Empresa (Médicos da Empresa)</option>
+                                    <option value="UNIDADE">Por Unidade (Médicos da Unidade)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="referencia-group" style="flex-basis: 70%; display: none;">
+                                <label for="referencia-select" id="referencia-label">Selecione:</label>
+                                <select id="referencia-select" disabled style="width: 100%;">
+                                    <option value="">Selecione o alvo (Empresa/Unidade)</option>
+                                </select>
+                                <input type="hidden" id="referencia-type" value="">
+                            </div>
+                        </div>
+
+                        <div class="form-group checkbox-align-group" id="todos-medicos-confirm" style="display: none;">
+							<input type="checkbox" id="confirmar-todos">
+							<label for="confirmar-todos">Confirmo que desejo enviar para **TODOS** os médicos cadastrados.</label>
+						</div>
+                        
+                        <div class="form-group">
+                            <label for="comunicado-conteudo">Conteúdo do Comunicado (Será enviado via WhatsApp):</label>
+                            <textarea id="comunicado-conteudo" rows="20" required 
+                                placeholder="Olá Dr(a) [NOME_MEDICO], A Health App tem um novo comunicado importante..." 
+                                style="width: 100%; resize: vertical;">
+                            </textarea>
+                            
+                        </div>
+                        
+                        <button type="submit" id="enviar-button" class="btn-primary">
+                            <i class="fas fa-paper-plane"></i> Enviar Comunicado e Iniciar Rastreamento
+                        </button>
+                        
+                        <div id="status-message" class="alert" style="display: none;"></div>
+                    </form>
+                </div>
+                
+                <div class="card full-width">
+                    <h3>Status dos Comunicados Enviados</h3>
+                    <div class="list-filters">
+                        <label for="filter-comunicado">Filtrar:</label>
+                        <select id="filter-comunicado" class="filter-input">
+                            <option value="">Todos os Comunicados</option>
+                            </select>
+                        <button id="search-status-button" class="btn-secondary small">Buscar Status</button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Público Alvo</th>
+                                    <th>Total Enviado</th>
+                                    <th>Total Ciente</th>
+                                    <th>Taxa (%)</th>
+                                    <th>Data Envio</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comunicados-status-table-body">
+                                <tr><td colspan="7">Selecione um comunicado acima para ver o status.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+        
+    </div>
+
+    <script src="js/dashboard-base.js"></script>
+    <script src="js/comunicados.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Agendamento em Lote</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+             <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    <li class="active"><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
+                    <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
+                </ul>
+            </nav>
+            <div class="user-info">
+                <span id="welcome-message">Olá, Usuário</span>
+                <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Agendamento de Treinamento em Lote</h1>
+                <p>Selecione os médicos, defina o treinamento e agende todos de uma vez.</p>
+            </header>
+            
+            <section class="list-container">
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-users-medical"></i> Médicos Elegíveis</h2>
+                    
+                    <div id="message-area" class="message-area"></div>
+                    
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="select-all"></th>
+                                    <th>Nome</th>
+                                    <th>CRM</th>
+                                    <th>Unidade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="medicos-table-body">
+                                <tr><td colspan="4" class="placeholder-text"><i class="fas fa-spinner fa-spin"></i> Carregando médicos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-container">
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-calendar-plus"></i> Detalhes do Agendamento (Para Lote)</h2>
+                    <form id="lote-agendamento-form">
+                        <div class="form-group-grid">
+                            
+                            <div class="form-group">
+                                <label for="data_integracao">Data do Treinamento</label>
+                                <input type="date" id="data_integracao" name="data_integracao" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="horario">Horário</label>
+                                <input type="time" id="horario" name="horario" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="unidade_agendada">Unidade de Agendamento</label>
+                                <select id="unidade_agendada" name="unidade_agendada" required>
+                                    <option value="" disabled selected>Carregando unidades...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group-inline">
+                            <label class="checkbox-container">PALS
+                                <input type="checkbox" id="pals" name="pals">
+                                <span class="checkmark"></span>
+                            </label>
+
+                            <label class="checkbox-container">ACLS
+                                <input type="checkbox" id="acls" name="acls">
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="submit-lote-button" disabled>
+                                <i class="fas fa-layer-group"></i> Agendar Lote (<span id="count-selected">0</span> médicos)
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="window.location.href='/agendamentos.html'">
+                                <i class="fas fa-undo"></i> Voltar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/agendamentos-lote.js"></script>
+</body>
+</html>
