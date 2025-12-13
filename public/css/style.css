@@ -17,15 +17,11 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* 🛑 CORREÇÃO CRUCIAL: Retira as regras de Flexbox e Padding para permitir o layout do Dashboard em tela cheia */
+/* 🛑 CORREÇÃO FINAL: BODY NEUTRO para o Dashboard funcionar em tela cheia */
 body {
     background-color: var(--color-primary);
     color: var(--color-text-dark);
-    /* display: flex;        <--- REMOVIDO */
-    /* justify-content: center; <--- REMOVIDO */
-    /* align-items: center;     <--- REMOVIDO */
     min-height: 100vh;
-    /* padding: 20px;         <--- REMOVIDO */
 }
 
 /* NOVO: Classe para centralizar APENAS o conteúdo da página de Login */
@@ -37,7 +33,7 @@ body {
     padding: 20px;
 }
 
-/* Container Principal do Login (Mantenho para o login.html) */
+/* Container Principal do Login */
 .login-container {
     background-color: var(--color-text-light);
     border-radius: 12px;
@@ -61,7 +57,7 @@ body {
 }
 
 .logo-icon {
-    font-size: 3em; /* Icone de saúde simples */
+    font-size: 3em;
     color: var(--color-secondary);
     margin-bottom: 10px;
 }
@@ -112,7 +108,7 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #00b386; /* Um verde ligeiramente mais escuro */
+    background-color: #00b386;
     transform: translateY(-2px);
 }
 
@@ -142,7 +138,7 @@ body {
     border-radius: 6px;
     text-align: center;
     font-weight: 500;
-    display: none; /* Inicialmente oculto */
+    display: none;
 }
 
 .success {
@@ -155,33 +151,30 @@ body {
     color: #721c24;
 }
 
-/* Media Query para garantir Mobile-First */
+/* Media Query para garantir Mobile-First (Login) */
 @media (min-width: 576px) {
     .login-container {
         padding: 40px;
     }
 }
-/* --- Estilos do Modal/Pop-up --- */
 
+/* --- Estilos do Modal/Pop-up --- */
 .modal-overlay {
-    /* Esconde por padrão e cobre toda a tela */
     display: none; 
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    /* Fundo semi-transparente */
     background-color: rgba(0, 0, 0, 0.5); 
-    /* Centraliza o conteúdo (o modal em si) */
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000; /* Garante que fique acima de outros elementos */
+    z-index: 1000;
 }
 
 .modal-overlay.active {
-    display: flex; /* Mostra quando a classe 'active' é adicionada */
+    display: flex;
 }
 
 .modal-content {
@@ -190,11 +183,10 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     width: 90%;
-    max-width: 500px; /* Limita o tamanho máximo */
-    max-height: 90vh; /* Para telas menores */
+    max-width: 500px;
+    max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    /* Animação de entrada */
     transform: scale(0.95);
     transition: transform 0.2s ease-out;
 }
@@ -231,7 +223,6 @@ body {
     color: #333;
 }
 
-/* Garante que os formulários dentro do modal tenham um bom espaçamento */
 .modal-content .form-group {
     margin-bottom: 15px;
 }
@@ -250,64 +241,47 @@ body {
     box-sizing: border-box;
 }
 
-//* 1. GARANTIA DE ALINHAMENTO DO GRUPO */
+//* 1. GARANTIA DE ALINHAMENTO DO GRUPO (Checkbox) */
 .checkbox-align-group {
     display: flex;         
-    align-items: center;   /* Alinha verticalmente ao centro (Flexbox) */
-    gap: 10px;             /* Espaço entre o checkbox e o label */
-    margin-top: 15px;      /* Espaço superior para separar da seção anterior */
-    margin-bottom: 20px;   /* Espaço inferior para separar do campo de conteúdo */
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 20px;
 }
 
-/* 2. ESTILIZAÇÃO DO CHECKBOX (MAIS DESTAQUE) */
+/* 2. ESTILIZAÇÃO DO CHECKBOX */
 .checkbox-align-group input[type="checkbox"] {
-    /* Reset de Margens para garantir alinhamento */
     margin: 0;
     padding: 0;
-
-    /* Tamanho do Checkbox */
-    width: 20px;            /* Um pouco maior para destaque */
-    height: 20px;           
-    
-    /* Borda Destacada (Contorno mais escuro) */
-    border: 2px solid #333; /* Borda mais grossa e escura */
-    border-radius: 4px;     
-    
-    /* Garante que o checkbox não encolha */
+    width: 20px;
+    height: 20px;
+    border: 2px solid #333;
+    border-radius: 4px;
     flex-shrink: 0;
-    
-    /* Remove a aparência padrão do navegador para melhor controle visual */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    
-    /* Transição suave para o estado de checado */
     transition: background-color 0.1s, border-color 0.1s;
 }
 
 /* 3. ESTILOS QUANDO CHECADO E FOCO */
-
-/* Estilo quando checado */
 .checkbox-align-group input[type="checkbox"]:checked {
-    border-color: #007bff; /* Borda azul ao marcar */
-    background-color: #007bff; /* Fundo azul (cor primária) */
-    /* Adicione um ícone de check (opcional, mas comum para checkboxes estilizados) */
-    /* Este requer um background-image com o ícone de 'v' */
+    border-color: #007bff;
+    background-color: #007bff;
 }
 
-/* Contorno de foco (Acessibilidade) */
 .checkbox-align-group input[type="checkbox"]:focus {
-    outline: 3px solid rgba(0, 123, 255, 0.5); /* Anel de foco mais visível e suave */
+    outline: 3px solid rgba(0, 123, 255, 0.5);
     outline-offset: 1px;
 }
 
-/* Garante que o texto do label também esteja alinhado (geralmente é desnecessário com Flexbox, mas é uma segurança) */
 .checkbox-align-group label {
     line-height: 1.5;
 }
 
 /* ================================================= */
-/* NOVO: ESTILOS DE LAYOUT E RESPONSIVIDADE (DASHBOARD) */
+/* ESTILOS DE LAYOUT E RESPONSIVIDADE (DASHBOARD) */
 /* ================================================= */
 
 /* Estrutura Principal da Aplicação */
@@ -315,8 +289,8 @@ body {
     display: flex;
     width: 100%;
     min-height: 100vh;
-    padding: 0; /* Remove padding do body para o app-shell ocupar tudo */
-    background-color: var(--color-background-card); /* Fundo claro para o conteúdo */
+    padding: 0; 
+    background-color: var(--color-background-card);
 }
 
 /* --- Sidebar (Mobile First - Escondida por padrão) --- */
@@ -340,7 +314,7 @@ body {
     left: 0; /* Mostra a sidebar quando o menu é ativado */
 }
 
-/* Estilo da Logo e Navegação (mantendo a cor escura do tema) */
+/* Estilo da Logo e Navegação */
 .logo-area {
     text-align: center;
     margin-bottom: 30px;
@@ -383,8 +357,7 @@ body {
 .main-content {
     flex-grow: 1;
     padding: 20px;
-    /* No mobile, ocupe 100% da largura, mas permita rolagem se a sidebar estiver aberta */
-    overflow-x: hidden; 
+    overflow-x: hidden; /* Evita barra de rolagem horizontal desnecessária */
 }
 
 .top-bar {
@@ -394,7 +367,7 @@ body {
     padding: 15px 0;
     margin-bottom: 20px;
     border-bottom: 1px solid #eee;
-    background-color: var(--color-background-card); /* Garante que a barra superior fique clara */
+    background-color: var(--color-background-card);
 }
 
 .user-info {
@@ -431,7 +404,7 @@ body {
     color: var(--color-primary); 
     cursor: pointer;
     padding: 0;
-    margin-right: 10px; /* Espaçamento da lateral */
+    margin-right: 10px;
 }
 
 
@@ -440,14 +413,14 @@ body {
     /* 1. Layout Principal em 2 Colunas */
     .app-shell {
         display: grid;
-        grid-template-columns: 250px 1fr; /* Sidebar de 250px e o resto para o conteúdo */
+        grid-template-columns: 250px 1fr;
         padding: 0;
     }
     
     /* 2. Reposiciona a Sidebar para o Layout Fixo */
     .sidebar {
         position: relative; /* Volta ao fluxo normal */
-        left: 0; /* Garante que esteja visível */
+        left: 0; 
         height: 100%;
         min-height: 100vh;
     }
@@ -459,6 +432,6 @@ body {
     
     /* 4. Ajuste na Top Bar */
     .top-bar {
-        padding: 15px 20px 15px 0; /* Ajusta o padding da top bar no desktop */
+        padding: 15px 20px 15px 0;
     }
 }

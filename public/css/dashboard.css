@@ -1,6 +1,8 @@
 /* public/css/dashboard.css */
 
 /* Estrutura Geral */
+/* Estas regras já estão (e devem estar) em style.css, mas as mantemos 
+   aqui se for o seu ponto central para estilos de dashboard. */
 .app-shell {
     display: flex;
     width: 100%;
@@ -15,8 +17,10 @@
     padding: 20px 0;
     transition: width 0.3s;
     flex-shrink: 0;
-    /* Ocultar em mobile por padrão */
-    display: none; 
+    /* 🛑 CORREÇÃO CRUCIAL: 'display: none' FOI REMOVIDO!
+       Essa regra estava CONFLITANDO com o 'position: fixed' e 'left: -250px' 
+       no style.css, o que causava a quebra do menu. Agora o CSS principal 
+       controla a abertura da gaveta (drawer). */
 }
 
 .logo-area {
@@ -119,7 +123,7 @@
 }
 
 .kpi-card {
-    flex: 1 1 180px; /* Base para 4 colunas em desktop */
+    flex: 1 1 180px;
     text-align: center;
 }
 
@@ -147,11 +151,11 @@
 
 /* Cards Operacionais */
 .operational-card {
-    flex: 1 1 calc(50% - 10px); /* Ocupa metade em desktop */
+    flex: 1 1 calc(50% - 10px);
 }
 
 .full-width {
-    flex: 1 1 100%; /* Ocupa largura total */
+    flex: 1 1 100%;
 }
 
 .half-width {
@@ -167,7 +171,7 @@
 .scrollable-list {
     max-height: 300px;
     overflow-y: auto;
-    padding-right: 10px; /* Para espaço da barra de rolagem */
+    padding-right: 10px;
 }
 
 .list-item {
@@ -213,15 +217,6 @@
 }
 
 /* Mobile-First Adjustments */
-@media (min-width: 768px) {
-    .sidebar {
-        display: block; /* Exibe sidebar em tablets e desktop */
-    }
-    .main-content {
-        padding: 30px;
-    }
-}
-
 @media (max-width: 767px) {
     .app-shell {
         flex-direction: column;
@@ -234,7 +229,7 @@
         margin-bottom: 10px;
     }
     .operational-card, .half-width, .kpi-card {
-        flex: 1 1 100%; /* Empilha tudo em mobile */
+        flex: 1 1 100%;
     }
     
     /* Ajuste para filtros em mobile */
@@ -246,14 +241,15 @@
         width: 100%;
     }
 }
-/* --- Melhorias no Layout de Filtros (APLICADO) --- */
+
+
+/* --- Melhorias no Layout de Filtros (Página de Agendamentos) --- */
 
 /* 1. Container principal para estilizar e agrupar os filtros e o botão de lote */
 .filter-bar-container {
-    /* **NOVO: Flexbox para alinhar o grupo de filtros (esquerda) e o botão de lote (direita)** */
     display: flex;
-    justify-content: space-between; /* Empurra o botão de lote para a direita */
-    align-items: flex-end; /* Alinha os blocos pela base (inputs/botões ficam alinhados) */
+    justify-content: space-between;
+    align-items: flex-end;
     
     padding: 15px;
     border: 1px solid #e0e0e0;
@@ -265,8 +261,8 @@
 /* 2. Flexbox para alinhar todos os controles de filtro e o botão de busca (bloco esquerdo) */
 .filter-controls {
     display: flex;
-    gap: 15px; /* Espaçamento entre cada filtro */
-    align-items: flex-end; /* Alinha todos os itens pela base */
+    gap: 15px;
+    align-items: flex-end;
     flex-wrap: wrap; 
 }
 
@@ -290,7 +286,7 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1em;
-    height: 38px; /* Altura fixa para alinhar com o botão de busca e lote */
+    height: 38px;
 }
 
 /* 5. Estilo do botão de Busca para alinhamento */
@@ -298,7 +294,7 @@
     width: auto !important; 
     padding: 10px 20px !important;
     white-space: nowrap;
-    height: 38px; /* Altura igual aos campos de input */
+    height: 38px;
 }
 
 /* 6. Estilo para a área do botão de Lote (bloco direito) */
@@ -307,56 +303,38 @@
     align-items: flex-end;
 }
 
-/* 7. Ajusta a altura do botão de Lote para ficar na mesma linha dos inputs/busca */
+/* 7. Ajusta a altura do botão de Lote */
 #lote-button {
     height: 38px; 
     padding: 0 15px;
 }
-
-/* Estilo geral para Inputs e Selects */
-.input-filter {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
-    height: 38px; /* Altura fixa para alinhar com o botão */
-}
-
-/* Ajuste o botão de busca para que não ocupe 100% da largura */
-.search-button {
-    width: auto !important; 
-    padding: 10px 20px !important;
-    white-space: nowrap;
-    height: 38px; /* Altura igual aos campos de input */
-}
-/* FIM da seção de Filtros da página de Agendamentos (anteriormente com erro de sintaxe) */
 
 
 /* --- Layout Específico para Agendamento em Lote --- */
 
 .lote-layout-container {
     display: flex;
-    gap: 25px; /* Espaço entre as duas colunas */
-    align-items: flex-start; /* Alinha os itens pelo topo */
+    gap: 25px;
+    align-items: flex-start;
 }
 
-/* Tabela de Médicos (Lado Esquerdo): Ocupa mais espaço */
+/* Tabela de Médicos (Lado Esquerdo) */
 .lote-layout-container .list-container {
-    flex: 3; /* Ocupa 3 partes do espaço disponível (aprox. 75%) */
+    flex: 3;
     min-width: 0; 
 }
 
-/* Formulário de Detalhes (Lado Direito): Ocupa menos espaço */
+/* Formulário de Detalhes (Lado Direito) */
 .lote-layout-container .form-container {
-    flex: 1; /* Ocupa 1 parte do espaço disponível (aprox. 25%) */
-    position: sticky; /* Mantém o formulário visível durante o scroll da tabela */
-    top: 20px; /* Distância do topo */
+    flex: 1;
+    position: sticky;
+    top: 20px;
 }
 
 /* Melhoria no grid do formulário */
 .form-group-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Duas colunas para data e horário */
+    grid-template-columns: 1fr 1fr;
     gap: 15px;
     margin-bottom: 20px;
 }
@@ -368,9 +346,9 @@
     margin-top: 25px;
 }
 
-/* Habilita a rolagem (scroll) na tabela de médicos para evitar que a página toda role */
+/* Habilita a rolagem (scroll) na tabela de médicos */
 .table-scroll {
-    max-height: 600px; /* Altura máxima para a tabela */
+    max-height: 600px;
     overflow-y: auto; 
 }
 
@@ -385,11 +363,11 @@
     }
     .lote-layout-container .list-container,
     .lote-layout-container .form-container {
-        flex: 1 1 100%; /* Ocupa largura total */
+        flex: 1 1 100%;
         min-width: 100%;
     }
     .lote-layout-container .form-container {
-        position: static; /* Remove sticky em mobile */
+        position: static;
         top: auto;
     }
 }
