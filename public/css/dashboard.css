@@ -371,3 +371,91 @@
         top: auto;
     }
 }
+
+/* ================================================= */
+/* 🛑 MEDIA QUERY PARA MOBILE (Telas <= 767px)       */
+/* Garante que listagens, cards e formulários empilhem */
+/* ================================================= */
+
+@media (max-width: 767px) {
+    
+    /* 1. ESTRUTURA E TOP BAR */
+    
+    /* Garante que os elementos dentro do Top Bar se empilhem */
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* 2. CARDS E GRADES DO DASHBOARD */
+    
+    /* Força todos os cards (KPIs, operacionais, etc.) a ocuparem a largura total no mobile, empilhando-se */
+    .operational-card, 
+    .half-width, 
+    .full-width, 
+    .kpi-card {
+        flex: 1 1 100%;
+        min-width: 100%; /* Garante que não sejam espremidos por flexbox */
+    }
+    
+    /* 3. CORREÇÃO DE FORMULÁRIOS EM GRID (P.ex., Cadastro Médico) */
+    
+    /* Transforma grids de formulário (que tinham 1fr 1fr no desktop) em uma única coluna */
+    .form-group-grid {
+        grid-template-columns: 1fr; 
+        gap: 15px;
+    }
+    
+    /* 4. CORREÇÃO DE FILTROS DE PESQUISA (P.ex., Agendamentos) */
+
+    /* Força os grupos de filtro a se empilharem */
+    .appointment-filters, 
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    
+    .appointment-filters label, 
+    .appointment-filters .filter-input,
+    .filter-group,
+    .search-button,
+    .lote-action-area {
+        width: 100% !important;
+        min-width: 100%;
+    }
+    
+    /* 5. CORREÇÃO DE TABELAS (P.ex., Lista Médicos, Agendamentos, Lote) */
+
+    /* Permite que o container da tabela (se a tabela for muito larga) seja rolado horizontalmente */
+    .data-table-container,
+    .table-scroll { 
+        display: block;
+        width: 100%;
+        overflow-x: auto; /* Habilita a rolagem horizontal */
+        -webkit-overflow-scrolling: touch; /* Melhora a rolagem em iOS */
+    }
+    
+    /* Garante que a tabela não quebre em várias linhas (para forçar a rolagem) */
+    .data-table {
+        min-width: 700px; /* Define uma largura mínima para forçar a rolagem */
+        width: auto;
+        white-space: nowrap; /* Impede a quebra de texto nas células */
+    }
+    
+    /* 6. LAYOUT DE AGENDAMENTO EM LOTE */
+    
+    /* Empilha os contêineres de lista e formulário */
+    .lote-layout-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    /* Garante que os contêineres internos de lote ocupem 100% */
+    .lote-layout-container .list-container,
+    .lote-layout-container .form-container {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
