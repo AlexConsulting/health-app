@@ -10,22 +10,17 @@ const loteButton = document.getElementById('lote-button');
 
 let allAgendamentosData = [];
 
-// === Elementos e Lógica do MODAL DE INTEGRAÇÃO (Envio de Convite) ===
+// === Elementos e Lógica do NOVO MODAL (Envio de Convite) ===
 const agendamentoModal = document.getElementById('agendamento-modal');
 const closeButton = agendamentoModal ? agendamentoModal.querySelector('.close-button') : null;
 const individualForm = document.getElementById('individual-agendamento-form');
 
-// === Elementos e Lógica do MODAL DE ATIVAÇÃO ===
-const ativacaoModal = document.getElementById('ativacao-modal');
-// ATENÇÃO: Verifique se o modal de ativação possui o botão de fechar com a classe '.close-button'
-const ativacaoCloseButton = ativacaoModal ? ativacaoModal.querySelector('.close-button') : null;
-const ativacaoForm = document.getElementById('ativacao-agendamento-form');
 
 // ------------------------------------------------------------------
-// 💡 FUNÇÃO: Gera a mensagem de convite para Integração
+// 💡 NOVO: Função para gerar o corpo da mensagem de convite no WhatsApp
 // ------------------------------------------------------------------
 /**
- * Gera a mensagem padronizada do WhatsApp com o link de seleção para Integração.
+ * Gera a mensagem padronizada do WhatsApp com o link de seleção.
  * @param {string} medicoNome - Nome do médico.
  * @param {string} agendamentoId - ID do agendamento PENDENTE.
  * @returns {string} Mensagem completa e codificada para o WhatsApp.
@@ -36,7 +31,7 @@ function generateInvitationMessage(medicoNome, agendamentoId) {
     
     // Datas disponíveis fixas (conforme padrão de comunicação)
     const fixedDates = 
-        `\u{1F4C5} Dezembro/2025\n` +
+        `\u{1F4C5} Dezembro/2025\n` + // 📅
         `01, 03, 05, 08, 10, 12, 15, 17, 19, 22\n\n` +
         `\u{1F4C5} Janeiro/2026\n` +
         `08, 09, 12, 15, 16, 19, 22, 23, 26, 29, 30`;
@@ -45,7 +40,7 @@ function generateInvitationMessage(medicoNome, agendamentoId) {
     const rawMessage = 
         `Olá, Dr. ${medicoNome},\n\n` +
         `Tudo bem?\n\n` +
-        `Meu nome é Jhulia, sou do setor de Qualidade da Performa Saúde. Primeiramente, seja muito bem-vindo ao time Performa Saúde! \u{1F60A}\n\n` + 
+        `Meu nome é Jhulia, sou do setor de Qualidade da Performa Saúde. Primeiramente, seja muito bem-vindo ao time Performa Saúde! \u{1F60A}\n\n` + // 😊
         `O motivo do meu contato é para agendarmos a sua integração on-line, um passo essencial para o início da sua agenda no Plena Saúde. Durante essa integração, serão apresentados todos os protocolos e rotinas internas da unidade e da Performa Saúde.\n\n` +
         `Essa reunião precisa ser realizada antes do seu primeiro plantão, preferencialmente com a maior antecedência possível, para que possamos testar o sistema e corrigir qualquer pendência de cadastro, caso necessário. As integrações são realizadas às segundas, quartas e sextas-feiras, sempre às 15h, diretamente com a Coordenadora de Qualidade, Hedine Costa.\n\n` +
         `Temos as seguintes datas disponíveis:\n` +
@@ -60,45 +55,20 @@ function generateInvitationMessage(medicoNome, agendamentoId) {
 }
 // ------------------------------------------------------------------
 
-// ------------------------------------------------------------------
-// 💡 NOVO: Função para gerar a mensagem de convite para Ativação
-// ------------------------------------------------------------------
-/**
- * Gera a mensagem padronizada do WhatsApp para o agendamento de Ativação.
- * @param {string} medicoNome - Nome do médico.
- * @param {string} agendamentoId - ID do agendamento.
- * @returns {string} Mensagem completa e codificada para o WhatsApp.
- */
-function generateAtivacaoMessage(medicoNome, agendamentoId) {
-    // O link deve apontar para a nova página de seleção pública de ativação
-    const selectionLink = `${window.location.origin}/ativacao-data.html?id=${agendamentoId}`;
-    
-    const rawMessage = 
-        `Olá, Dr. ${medicoNome},\n\n` +
-        `Tudo bem? Meu nome é Juhlia, sou do setor de Qualidade da Performa Saúde.\n\n` +
-        `Estamos entrando em contato para agendar sua *Ativação de Senha Assistida* do sistema Plena Saúde, um passo essencial para você iniciar suas atividades. \n\n` +
-        `As ativações são realizadas de Segunda a Sexta, no horário das 14h às 16h.\n\n` +
-        `*Clique no link abaixo para escolher o melhor dia e horário para a sua ativação:* \n${selectionLink}\n\n` +
-        `Aguardamos sua confirmação.\n\n` +
-        `Atenciosamente,\n` +
-        `Equipe de Qualidade\n` +
-        `Performa Saúde`;
-    
-    return encodeURIComponent(rawMessage);
-}
-// ------------------------------------------------------------------
-
 
 /**
- * Abre o modal de Integração (Envio de Convite).
+ * Abre o modal e preenche os dados do agendamento PENDENTE.
+ * O modal agora é usado para confirmar os dados antes de ENVIAR O CONVITE.
  * @param {object} data - Dados do agendamento (id, medico_nome, unidade_nome, pals, acls, medico_telefone).
  */
 function openModal(data) {
     if (!agendamentoModal) {
-        console.error('Modal de agendamento de integração não encontrado.');
+        console.error('Modal de agendamento não encontrado.');
         return;
     }
 
+    console.log('Dados carregados para o modal (Envio de Convite):', data);
+    
     // Preenche os campos de identificação
     document.getElementById('medico-telefone-modal').value = data.medico_telefone || 'N/A';
     document.getElementById('agendamento-id-modal').value = data.id; 
@@ -109,25 +79,14 @@ function openModal(data) {
     document.getElementById('pals-modal').checked = data.pals || false;
     document.getElementById('acls-modal').checked = data.acls || false;
     
+    // Configuração para ocultar/desabilitar data/hora (Médico escolhe)
+    const dataIntegracaoInput = document.getElementById('data-integracao-modal');
+    const horarioInput = document.getElementById('horario-modal');
+
+    if (dataIntegracaoInput) dataIntegracaoInput.required = false;
+    if (horarioInput) horarioInput.required = false;
+
     agendamentoModal.style.display = 'block';
-}
-
-/**
- * Abre o modal de Agendamento de Ativação (Envio de Convite).
- * @param {object} data - Dados do agendamento (id, medico_nome, unidade_nome, medico_telefone).
- */
-function openAtivacaoModal(data) {
-    if (!ativacaoModal) {
-        console.error('Modal de ativação não encontrado.');
-        return;
-    }
-
-    document.getElementById('ativacao-id-modal').value = data.id;
-    document.getElementById('ativacao-medico-nome-modal').value = data.medico_nome;
-    document.getElementById('ativacao-unidade-nome-modal').value = data.unidade_nome;
-    document.getElementById('ativacao-medico-telefone-modal').value = data.medico_telefone || 'N/A';
-    
-    ativacaoModal.style.display = 'block';
 }
 
 if (closeButton) {
@@ -136,22 +95,12 @@ if (closeButton) {
     }
 }
 
-if (ativacaoCloseButton) {
-    ativacaoCloseButton.onclick = function() {
-        ativacaoModal.style.display = 'none';
-    }
-}
-
-
 window.onclick = function(event) {
     if (agendamentoModal && event.target === agendamentoModal) {
         agendamentoModal.style.display = 'none';
     }
-    if (ativacaoModal && event.target === ativacaoModal) {
-        ativacaoModal.style.display = 'none';
-    }
 }
-// === FIM: Lógica dos Modais ===
+// === FIM: Lógica do NOVO MODAL (Envio de Convite) ===
 
 
 // --- Funções de Utilitário ---
@@ -220,42 +169,21 @@ function formatDate(isoString) {
  */
 function formatStatus(status) {
     switch (status) {
-        // Status do Meet de Integração (Fluxo Inicial)
         case 'PENDENTE': return '<span class="status-badge status-pending">Pendente</span>';
+        // 💡 NOVOS STATUS
         case 'CONVITE_ENVIADO': return '<span class="status-badge status-sent">Convite Enviado</span>';
         case 'PRE_AGENDADO': return '<span class="status-badge status-pre-scheduled">Pré-Agendado</span>';
+        
         case 'AGENDADO': return '<span class="status-badge status-scheduled">Agendado</span>';
         case 'CONFIRMADO': return '<span class="status-badge status-confirmed">Confirmado</span>';
-        case 'REALIZADO': return '<span class="status-badge status-completed">Realizado (Integração)</span>'; // Adicionado "(Integração)" para clareza
-        
-        // =========================================================
-        // 💡 NOVOS STATUS DO MEET DE ATIVAÇÃO (Obrigatórios)
-        // =========================================================
-        
-        // 1. Sinaliza que a Integração acabou e o ciclo de Ativação começou
-        case 'AGENDAMENTO_ATIVACAO_PENDENTE': return '<span class="status-badge status-activation-pending">Ativação Pendente</span>'; 
-
-        // 2. Convite de Ativação enviado (Médico pode agendar)
-        case 'ATIVACAO_ENVIADA': return '<span class="status-badge status-sent-ativacao">Convite Enviado (Ativ.)</span>';
-        
-        // 3. Médico escolheu a data, aguardando confirmação do Admin
-        case 'ATIVACAO_PRE_AGENDADA': return '<span class="status-badge status-activation-pre-scheduled">Ativação Pré-Agendada</span>'; 
-        
-        // 4. Admin confirmou a data do Meet de Ativação
-        case 'ATIVACAO_AGENDADA': return '<span class="status-badge status-scheduled-ativacao">Ativação Agendada</span>';
-        
-        // 5. Meet de Ativação realizado (Fim do processo)
-        case 'ATIVACAO_REALIZADA': return '<span class="status-badge status-completed-ativacao">Ativação Realizada</span>';
-        
-        // =========================================================
-        
+        case 'REALIZADO': return '<span class="status-badge status-completed">Realizado</span>';
         case 'CANCELADO': return '<span class="status-badge status-cancelled">Cancelado</span>';
         default: return status;
     }
 }
 
 // ------------------------------------------------------------------
-// FUNÇÃO: Confirmação Final de Agendamento (PRE_AGENDADO -> AGENDADO)
+// 💡 FUNÇÃO ATUALIZADA: Confirmação Final de Agendamento (PRE_AGENDADO -> AGENDADO)
 // ------------------------------------------------------------------
 /**
  * Atualiza o status do agendamento de PRE_AGENDADO para AGENDADO (Confirmação Final).
@@ -324,9 +252,7 @@ async function loadUnitsForFilter() {
 
         if (response.ok) {
             unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
-            // Assumimos que o backend retorna { unidades: [...] }
-            const units = result.unidades || []; 
-            units.forEach(unit => {
+            result.unidades.forEach(unit => {
                 const option = document.createElement('option');
                 option.value = unit.id;
                 option.textContent = unit.nome;
@@ -340,7 +266,6 @@ async function loadUnitsForFilter() {
 
 /**
  * Carrega a lista de agendamentos com base nos filtros.
- * (Corrigido para evitar o erro de lista vazia)
  */
 async function loadAgendamentos() {
     const token = getToken();
@@ -369,13 +294,7 @@ async function loadAgendamentos() {
         const result = await response.json();
 
         if (response.ok) {
-            // CORREÇÃO: Trata se o backend retorna { agendamentos: [...] } ou o array direto
-            let dataList = result.agendamentos;
-            if (!dataList && Array.isArray(result)) {
-                dataList = result;
-            }
-            
-            allAgendamentosData = Array.isArray(dataList) ? dataList : [];
+            allAgendamentosData = result.agendamentos || [];
             renderAgendamentosTable(allAgendamentosData);
         } else if (response.status === 401) {
             getToken(); // Tenta renovar ou redirecionar
@@ -405,26 +324,16 @@ function renderAgendamentosTable(agendamentos) {
     agendamentos.forEach(agendamento => {
         const row = document.createElement('tr');
         
-        // --- Condições de Exibição de Botões (Integração) ---
+        // Determina a exibição dos botões
         const isPendente = agendamento.status === 'PENDENTE';
-        const isConviteEnviado = agendamento.status === 'CONVITE_ENVIADO'; 
-        const isPreAgendado = agendamento.status === 'PRE_AGENDADO'; 
+        const isConviteEnviado = agendamento.status === 'CONVITE_ENVIADO'; // Novo status
+        const isPreAgendado = agendamento.status === 'PRE_AGENDADO'; // Novo status
         const isAgendadoOuConfirmado = agendamento.status === 'AGENDADO' || agendamento.status === 'CONFIRMADO';
+        const isCancelavel = agendamento.status !== 'CANCELADO' && agendamento.status !== 'REALIZADO';
         
-        // --- Condições de Exibição de Botões (Ativação) ---
-        // 💡 CORRIGIDO: Botão de Ativação aparece quando a Integração está REALIZADA
-        const isAptoParaAtivacao = agendamento.status === 'REALIZADO';
-        const isAtivacaoAgendada = agendamento.status === 'ATIVACAO_AGENDADA';
-
-        // Ações gerais
-        // Um agendamento é cancelável a menos que já esteja REALIZADO (Integração ou Ativação)
-        const isCancelavel = agendamento.status !== 'CANCELADO' && agendamento.status !== 'REALIZADO' && agendamento.status !== 'ATIVACAO_REALIZADA';
-        
-        // Data e Horário
-        // Tenta data de ativação, depois data preferencial, depois data de integração
-        const displayDate = formatDate(agendamento.data_ativacao || agendamento.data_preferencial || agendamento.data_integracao); 
-        const displayTime = agendamento.horario_ativacao || agendamento.horario_preferencial || agendamento.horario || '';
-
+        // Data e Horário: prioriza data_preferencial se PRE_AGENDADO, senão usa a data_integracao
+        const displayDate = formatDate(agendamento.data_integracao || agendamento.data_preferencial); 
+        const displayTime = agendamento.horario || agendamento.horario_preferencial || '';
 
         row.innerHTML = `
             <td>${displayDate} ${displayTime}</td>
@@ -435,7 +344,7 @@ function renderAgendamentosTable(agendamentos) {
             <td>${formatStatus(agendamento.status)}</td>
             <td>
                 ${isPendente ? 
-                    // BOTÃO: Enviar Convite (abre modal Integração)
+                    // 💡 BOTÃO NOVO: Enviar Convite (abre modal)
                     `<button class="btn-icon btn-schedule-individual" title="Enviar Convite (WhatsApp)" 
                         data-id="${agendamento.id}"
                         data-medico-nome="${agendamento.medico_nome}"
@@ -446,24 +355,14 @@ function renderAgendamentosTable(agendamentos) {
                         <i class="fab fa-whatsapp"></i> 
                     </button>` : ''}
 
-                ${isAptoParaAtivacao ?
-                    // 💡 BOTÃO NOVO: Enviar Convite de Ativação (Aparece quando status é REALIZADO)
-                    `<button class="btn-icon btn-schedule-ativacao" title="Agendar Ativação de Senha" 
-                        data-id="${agendamento.id}"
-                        data-medico-nome="${agendamento.medico_nome}"
-                        data-unidade-nome="${agendamento.unidade_nome}"
-                        data-medico-telefone="${agendamento.medico_telefone || ''}">
-                        <i class="fas fa-key"></i> 
-                    </button>` : ''}
-
                 ${isConviteEnviado ?
-                    // Ação de copiar link (Integracao)
+                    // Ação de copiar link (usando a função de utilitário - precisa ser adicionada)
                     `<button class="btn-icon btn-copy-link" title="Copiar Link de Convite" onclick="copyConviteLink('${agendamento.id}')">
                         <i class="fas fa-copy"></i> 
                     </button>` : ''}
 
                 ${isPreAgendado ?
-                    // BOTÃO: Confirmar Agendamento Final (Integracao)
+                    // 💡 BOTÃO NOVO: Confirmar Agendamento Final (com os dados para o listener)
                     `<button class="btn-icon btn-confirm-final" title="Confirmar Agendamento Final" 
                         data-id="${agendamento.id}"
                         data-medico-nome="${agendamento.medico_nome}" 
@@ -473,9 +372,9 @@ function renderAgendamentosTable(agendamentos) {
                         <i class="fas fa-calendar-check"></i>
                     </button>` : ''}
 
-                ${isAgendadoOuConfirmado || isAtivacaoAgendada ? 
-                    // Botão Marcar como Realizado (Comum para Integração e Ativação)
-                    `<button class="btn-icon btn-realizar" title="Marcar como Realizado" data-id="${agendamento.id}" data-status="${isAtivacaoAgendada ? 'ATIVACAO_REALIZADA' : 'REALIZADO'}">
+                ${isAgendadoOuConfirmado ? 
+                    // Botão Marcar como Realizado (Existente)
+                    `<button class="btn-icon btn-realizar" title="Marcar como Realizado" data-id="${agendamento.id}" data-status="REALIZADO">
                         <i class="fas fa-check-circle"></i>
                     </button>` : ''}
                     
@@ -494,7 +393,7 @@ function renderAgendamentosTable(agendamentos) {
 }
 
 // ------------------------------------------------------------------
-// FUNÇÃO AUXILIAR: Copiar Link de Convite (para status CONVITE_ENVIADO)
+// 💡 FUNÇÃO AUXILIAR: Copiar Link de Convite (para status CONVITE_ENVIADO)
 // ------------------------------------------------------------------
 /**
  * Copia o link público de seleção de data para a área de transferência.
@@ -531,7 +430,7 @@ function addEventListenersToActions() {
     const token = getToken();
     if (!token) return;
 
-    // Listener para o botão de Enviar Convite (Abre o Modal Integração)
+    // Listener para o botão de Enviar Convite (Abre o Modal)
     document.querySelectorAll('.btn-schedule-individual').forEach(button => {
         button.addEventListener('click', (e) => {
             const agendamentoData = {
@@ -546,23 +445,11 @@ function addEventListenersToActions() {
         });
     });
     
-    // 💡 NOVO: Listener para o botão de Enviar Convite de Ativação (Abre o Modal Ativação)
-    document.querySelectorAll('.btn-schedule-ativacao').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const agendamentoData = {
-                id: e.currentTarget.dataset.id, 
-                medico_nome: e.currentTarget.dataset.medicoNome,
-                unidade_nome: e.currentTarget.dataset.unidadeNome,
-                medico_telefone: e.currentTarget.dataset.medicoTelefone, 
-            };
-            openAtivacaoModal(agendamentoData);
-        });
-    });
-
-    // Listener para o botão de Confirmação Final (PRE_AGENDADO -> AGENDADO)
+    // 💡 NOVO: Listener para o botão de Confirmação Final (PRE_AGENDADO -> AGENDADO)
     document.querySelectorAll('.btn-confirm-final').forEach(button => {
         button.addEventListener('click', async (e) => {
             const id = e.currentTarget.dataset.id;
+            // Extrai os dados necessários para montar a mensagem do WhatsApp (etapa 1)
             const medicoNome = e.currentTarget.dataset.medicoNome;
             const medicoTelefone = e.currentTarget.dataset.medicoTelefone;
             const dataFinal = e.currentTarget.dataset.dataFinal;
@@ -617,7 +504,7 @@ async function updateAgendamentoStatus(id, status, token) {
 }
 
 
-// Submit do Formulário Individual (ENVIA CONVITE de Integração)
+// NOVO: Submit do Formulário Individual (ENVIA CONVITE)
 if (individualForm) {
     individualForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -640,7 +527,7 @@ if (individualForm) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ status: 'CONVITE_ENVIADO' }) // NOVO STATUS
+                body: JSON.stringify({ status: 'CONVITE_ENVIADO' }) // 💡 NOVO STATUS
             });
 
             const result = await response.json();
@@ -650,8 +537,12 @@ if (individualForm) {
                 
                 // 2. Lógica para Geração e Abertura do link do WhatsApp
                 const telefoneLimpo = medicoTelefone.replace(/[\s-()]/g, ''); 
+                
+                // Constrói e codifica a mensagem de convite
                 const mensagem = generateInvitationMessage(medicoNome, agendamento_id);
-                window.open(`https://wa.me/55${telefoneLimpo}?text=${mensagem}`, '_blank'); // Abre WhatsApp
+
+                // Abre o link do WhatsApp
+                window.open(`https://wa.me/55${telefoneLimpo}?text=${mensagem}`, '_blank'); // Adicionado o 55
                 
                 // Fecha o modal e recarrega a lista
                 agendamentoModal.style.display = 'none';
@@ -663,60 +554,6 @@ if (individualForm) {
 
         } catch (error) {
             console.error('Erro no envio do convite:', error);
-            showMessage('Erro de conexão com o servidor.', 'error');
-        } finally {
-            submitButton.disabled = false;
-        }
-    });
-}
-
-
-// 💡 NOVO: Submit do Formulário de Ativação (ENVIA CONVITE de Ativação)
-if (ativacaoForm) {
-    ativacaoForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const token = getToken();
-        if (!token) return;
-
-        const agendamento_id = document.getElementById('ativacao-id-modal').value; 
-        const medicoNome = document.getElementById('ativacao-medico-nome-modal').value;
-        const medicoTelefone = document.getElementById('ativacao-medico-telefone-modal').value;
-        
-        const submitButton = document.getElementById('submit-ativacao-individual');
-        submitButton.disabled = true;
-
-        try {
-            // 1. Atualiza o status do agendamento de REALIZADO para ATIVACAO_ENVIADA
-            const response = await fetch(`/api/agendamentos/${agendamento_id}/status`, {
-                method: 'PUT', 
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: 'ATIVACAO_ENVIADA' }) // NOVO STATUS
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                showMessage(result.mensagem || 'Status atualizado para ATIVACAO_ENVIADA. Abrindo WhatsApp...', 'success');
-                
-                // 2. Lógica para Geração e Abertura do link do WhatsApp
-                const telefoneLimpo = medicoTelefone.replace(/[\s-()]/g, ''); 
-                const mensagem = generateAtivacaoMessage(medicoNome, agendamento_id);
-                window.open(`https://wa.me/55${telefoneLimpo}?text=${mensagem}`, '_blank'); // Abre WhatsApp
-                
-                // Fecha o modal e recarrega a lista
-                ativacaoModal.style.display = 'none';
-                setTimeout(loadAgendamentos, 1500); 
-                
-            } else {
-                showMessage(result.erro || 'Erro ao atualizar status e enviar link de ativação.', 'error');
-            }
-
-        } catch (error) {
-            console.error('Erro no envio do convite de ativação:', error);
             showMessage('Erro de conexão com o servidor.', 'error');
         } finally {
             submitButton.disabled = false;
