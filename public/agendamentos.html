@@ -43,26 +43,17 @@
                     <div class="card-header">
                         <h2>Treinamentos Agendados</h2>
                         <div class="actions">
-                        </div>
+                            </div>
                     </div>
                     
                     <div class="filter-bar">
                         <input type="date" id="filter-data" title="Filtrar por Data">
                         <select id="filter-status" title="Filtrar por Status">
                             <option value="">Todos os Status</option>
-                            <option value="PENDENTE">Pendente Integração</option>
-                            <option value="CONVITE_ENVIADO">Convite Enviado (Int.)</option>
-                            <option value="PRE_AGENDADO">Pré-Agendado (Int.)</option>
-                            <option value="AGENDADO">Agendado (Int.)</option>
-                            <option value="CONFIRMADO">Confirmado (Int.)</option>
-                            <option value="REALIZADO">Meet Realizado</option>
-                            
-                            <option value="AGENDAMENTO_ATIVACAO_PENDENTE">Aguardando Ativação</option>
-                            <option value="ATIVACAO_ENVIADA">Convite Enviado (Ativ.)</option>
-                            <option value="ATIVACAO_PRE_AGENDADA">Pré-Agendado (Ativ.)</option>
-                            <option value="ATIVACAO_AGENDADA">Ativação Agendada</option>
-                            <option value="ATIVACAO_REALIZADA">Ativação Realizada</option>
-                            
+                            <option value="PENDENTE">Pendente</option>
+                            <option value="CONVITE_ENVIADO">Convite Enviado</option> <option value="PRE_AGENDADO">Pré-Agendado</option> <option value="AGENDADO">Agendado</option>
+                            <option value="CONFIRMADO">Confirmado</option>
+                            <option value="REALIZADO">Realizado</option>
                             <option value="CANCELADO">Cancelado</option>
                         </select>
                         <select id="filter-unidade" title="Filtrar por Unidade">
@@ -82,7 +73,7 @@
                                 <tr style="background-color: #f8f9fa;">
                                     <th style="padding: 12px; text-align: left;">Data e Horário</th>
                                     <th style="padding: 12px; text-align: left;">Médico</th>
-                                    <th style="padding: 12px; text-align: left;">Telefone</th> 
+                                    <th style="padding: 12px; text-align: left;">Telefone</th> 
                                     <th style="padding: 12px; text-align: left;">Unidade</th>
                                     <th style="padding: 12px; text-align: left;">Detalhes (PALS/ACLS)</th>
                                     <th style="padding: 12px; text-align: left;">Status</th>
@@ -105,26 +96,24 @@
     <div id="agendamento-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-button">&times;</span>
-            <h3>Enviar Convite de Treinamento</h3> 
-            <p>Confirme os dados e clique em "Enviar Convite" para atualizar o status e abrir o WhatsApp.</p> 
-            <form id="individual-agendamento-form">
-                <input type="hidden" id="agendamento-id-modal"> 
-                
+            <h3>Enviar Convite de Treinamento</h3> <p>Confirme os dados e clique em "Enviar Convite" para atualizar o status e abrir o WhatsApp.</p> <form id="individual-agendamento-form">
+                <input type="hidden" id="agendamento-id-modal"> 
+                 
                 <div class="form-group">
                     <label for="medico-nome-modal">Médico:</label>
                     <input type="text" id="medico-nome-modal" disabled>
                 </div>
-                
+                 
                 <div class="form-group">
                     <label for="medico-telefone-modal">Telefone (WhatsApp):</label>
                     <input type="text" id="medico-telefone-modal" disabled> 
                 </div>
-                
+                 
                 <div class="form-group">
                     <label for="unidade-nome-modal">Unidade de Vínculo:</label>
                     <input type="text" id="unidade-nome-modal" disabled>
                 </div>
-                
+                 
                 <div class="form-group checkbox-group">
                     <label>Certificações Requeridas:</label>
                     <input type="checkbox" id="pals-modal" disabled> <label for="pals-modal">PALS</label>
@@ -136,40 +125,6 @@
             </form>
         </div>
     </div>
-    
-    <div id="ativacao-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2><i class="fas fa-calendar-alt"></i> Agendar Ativação de Senha Assistida</h2>
-            <form id="ativacao-agendamento-form">
-                <input type="hidden" id="ativacao-id-modal">
-
-                <div class="form-group">
-                    <label for="ativacao-medico-nome-modal">Médico:</label>
-                    <input type="text" id="ativacao-medico-nome-modal" disabled>
-                </div>
-                
-                <div class="form-group">
-                    <label for="ativacao-medico-telefone-modal">Telefone (WhatsApp):</label>
-                    <input type="text" id="ativacao-medico-telefone-modal" disabled>
-                </div>
-                
-                <div class="form-group">
-                    <label for="ativacao-unidade-nome-modal">Unidade de Vínculo:</label>
-                    <input type="text" id="ativacao-unidade-nome-modal" disabled>
-                </div>
-                
-                <p class="warning-text">
-                    O botão abaixo *enviará o link* para o médico agendar a ativação.
-                    A ativação deve ocorrer de Segunda a Sexta, das 14h às 16h.
-                </p>
-
-                <button type="submit" id="submit-ativacao-individual" class="btn btn-primary">
-                    <i class="fab fa-whatsapp"></i> Enviar Agenda para Ativação </button>
-            </form>
-        </div>
-    </div>
-    
     <script src="js/agendamentos.js"></script>
 </body>
 </html>
