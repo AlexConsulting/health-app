@@ -1,69 +1,16 @@
+// src/controllers/agendamentoController.js
+
 const pool = require('../../db/config'); 
 const logger = require('../../log/logger');
 const { v4: uuidv4 } = require('uuid'); 
 
-// =================================================================
-// FUNÇÕES AUXILIARES
-// =================================================================
-
-/**
- * Gera um token UUID v4 único para confirmação.
- * @returns {string} Token de confirmação.
- */
+// Função auxiliar para gerar um token único
 function generateConfirmationToken() {
     return uuidv4();
 }
 
-/**
- * Utilitário para ser chamado pelo MedicoController. Cria um agendamento com status 'PENDENTE'.
- * @param {number} medico_id - ID do médico.
- * @param {number} unidade_id - ID da unidade.
- * @param {boolean} pals - Requer PALS.
- * @param {boolean} acls - Requer ACLS.
- * @param {number} user_id - ID do usuário que criou o agendamento (Admin/Operador).
- * @returns {Promise<object>} O novo registro de agendamento criado.
- */
-const createPendingAgendamentoForMedico = async (medico_id, unidade_id, pals, acls, user_id) => {
-    const status_agendamento = 'PENDENTE';
-    // Data/Horário e Token são nulos para PENDENTE
-    const token_confirmacao = null; 
-
-    try {
-        const query = `
-            INSERT INTO agendamentos (
-                medico_id, 
-                unidade_id, 
-                pals,
-                acls,
-                status, 
-                token_confirmacao,
-                criado_por
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id, medico_id, status
-        `;
-        const values = [
-            medico_id, 
-            unidade_id, 
-            pals || false, 
-            acls || false,
-            status_agendamento, 
-            token_confirmacao,
-            user_id 
-        ];
-
-        const { rows } = await pool.query(query, values);
-        return rows[0];
-
-    } catch (error) {
-        logger.error(`Erro ao criar agendamento PENDENTE para médico ID ${medico_id}: ${error.message}`, { user_id, error_stack: error.stack });
-        // Lança o erro para que o MedicoController possa tratá-lo ou retornar 500
-        throw new Error('Erro interno ao registrar agendamento pendente.');
-    }
-};
-
 // =================================================================
-// 0. CREATE (Cadastrar Novo Agendamento Individual) - Status AGENDADO ou PENDENTE
+// 0. CREATE (Cadastrar Novo Agendamento Individual)
 // =================================================================
 
 const createAgendamento = async (req, res) => {
@@ -128,7 +75,7 @@ const createAgendamento = async (req, res) => {
 };
 
 // =================================================================
-// 1. READ (Listar Agendamentos) - Com filtros
+// 1. READ (Listar Agendamentos) - ATUALIZADO com data/horario_preferencial
 // =================================================================
 
 const getAgendamentos = async (req, res) => {
@@ -143,10 +90,8 @@ const getAgendamentos = async (req, res) => {
             a.status AS status, 
             a.pals,
             a.acls,
-            a.data_preferencial,   -- Data preferencial
-            a.horario_preferencial, -- Horário preferencial
-            a.criado_em,
-            a.data_atualizacao,
+            a.data_preferencial,    -- NOVO: Data preferencial
+            a.horario_preferencial, -- NOVO: Horário preferencial
             m.nome AS medico_nome, 
             m.crm AS medico_crm, 
             m.telefone AS medico_telefone, 
@@ -160,7 +105,7 @@ const getAgendamentos = async (req, res) => {
     let paramCount = 1;
 
     if (data) {
-        // Busca por data_integracao (oficial)
+        // A busca por data_integracao é mantida para os status AGENDADO/CONFIRMADO/REALIZADO
         query += ` AND a.data_integracao = $${paramCount++}`;
         values.push(data);
     }
@@ -177,7 +122,7 @@ const getAgendamentos = async (req, res) => {
         values.push(unidade_id);
     }
 
-    // Ordena pela data/horário oficial, priorizando a data oficial sobre a preferencial
+    // Ordena pela data/horário oficial, priorizando a data oficial sobre a preferencial para ordenação na listagem
     query += ` ORDER BY COALESCE(a.data_integracao, a.data_preferencial) ASC, COALESCE(a.horario, a.horario_preferencial) ASC`;
 
     try {
@@ -195,100 +140,6 @@ const getAgendamentos = async (req, res) => {
         });
     }
 };
-
-// =================================================================
-// 1.1 READ (Buscar Agendamentos PENDENTES) - Rota Específica
-// =================================================================
-
-const getAgendamentosPendentes = async (req, res) => {
-    const user_id = req.user.id; 
-
-    let query = `
-        SELECT 
-            a.id, 
-            a.data_integracao, 
-            a.horario, 
-            a.status AS status, 
-            a.pals,
-            a.acls,
-            a.data_preferencial,   
-            a.horario_preferencial, 
-            a.criado_em,
-            m.nome AS medico_nome, 
-            m.crm AS medico_crm, 
-            u.nome AS unidade_nome
-        FROM agendamentos a
-        JOIN medicos m ON a.medico_id = m.id
-        JOIN unidades u ON a.unidade_id = u.id 
-        WHERE a.status IN ('PENDENTE', 'CONVITE_ENVIADO', 'PRE_AGENDADO')
-        ORDER BY a.criado_em ASC
-    `;
-
-    try {
-        const { rows } = await pool.query(query);
-
-        logger.info(`Lista de agendamentos pendentes/em progresso carregada.`, { user_id, count: rows.length });
-
-        return res.status(200).json({
-            mensagem: 'Lista de agendamentos pendentes carregada com sucesso.',
-            agendamentos: rows
-        });
-
-    } catch (error) {
-        logger.error(`Erro ao buscar agendamentos PENDENTES: ${error.message}`, { user_id, error_stack: error.stack });
-        return res.status(500).json({ 
-            erro: 'Erro interno ao carregar a lista de agendamentos pendentes.' 
-        });
-    }
-};
-
-// =================================================================
-// 1.2 READ (Buscar Agendamento por ID)
-// =================================================================
-
-const getAgendamentoById = async (req, res) => {
-    const user_id = req.user.id;
-    const { id } = req.params;
-
-    const query = `
-        SELECT 
-            a.id, 
-            a.medico_id,
-            a.unidade_id,
-            a.data_integracao, 
-            a.horario, 
-            a.status AS status, 
-            a.pals,
-            a.acls,
-            a.data_preferencial,   
-            a.horario_preferencial, 
-            a.criado_em,
-            a.data_atualizacao,
-            m.nome AS medico_nome, 
-            m.crm AS medico_crm, 
-            u.nome AS unidade_nome
-        FROM agendamentos a
-        JOIN medicos m ON a.medico_id = m.id
-        JOIN unidades u ON a.unidade_id = u.id 
-        WHERE a.id = $1
-    `;
-
-    try {
-        const { rows } = await pool.query(query, [id]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ erro: 'Agendamento não encontrado.' });
-        }
-        
-        logger.info(`Detalhes do agendamento ID ${id} consultados.`, { user_id });
-        return res.status(200).json(rows[0]);
-
-    } catch (error) {
-        logger.error(`Erro ao buscar agendamento ID ${id}: ${error.message}`, { user_id, error_stack: error.stack });
-        return res.status(500).json({ erro: 'Erro interno ao buscar agendamento.' });
-    }
-};
-
 
 // =================================================================
 // 2. UPDATE (Atualizar Status: Confirmar/Cancelar/Realizado, etc.)
@@ -410,7 +261,7 @@ const confirmAgendamentoByToken = async (req, res) => {
 
 
 // =================================================================
-// 4. ENDPOINT PÚBLICO: Carregar Detalhes do Convite
+// 4. ENDPOINT PÚBLICO: Carregar Detalhes do Convite (NOVA FUNÇÃO)
 // =================================================================
 const getConviteDetails = async (req, res) => {
     const { id } = req.params;
@@ -435,8 +286,6 @@ const getConviteDetails = async (req, res) => {
             return res.status(404).json({ erro: 'Convite inválido ou agendamento já finalizado/cancelado.' });
         }
 
-        logger.info(`Detalhes do convite ID ${id} carregados. Status: ${rows[0].status}`);
-
         return res.status(200).json({
             mensagem: 'Detalhes do convite carregados.',
             agendamento: rows[0]
@@ -450,7 +299,8 @@ const getConviteDetails = async (req, res) => {
 
 
 // =================================================================
-// 5. ENDPOINT PÚBLICO: Receber Seleção de Data do Médico
+// 5. ENDPOINT PÚBLICO: Receber Seleção de Data do Médico (NOVA FUNÇÃO)
+//    Atualiza data/horario_preferencial e muda status para PRE_AGENDADO.
 // =================================================================
 const receberSelecaoMedico = async (req, res) => {
     // Rota pública, não requer autenticação
@@ -495,12 +345,13 @@ const receberSelecaoMedico = async (req, res) => {
 };
 
 // =================================================================
-// 6. CONFIRMAR AGENDAMENTO FINAL (Admin)
+// 6. CONFIRMAR AGENDAMENTO FINAL (Antiga agendarIndividual) - Fase 3 (Admin)
+//    Esta função agora é usada pelo admin para confirmar a data PRE_AGENDADA.
 // =================================================================
 const confirmarAgendamentoFinal = async (req, res) => {
     const user_id = req.user.id;
     // Recebe o ID do agendamento que está PRE_AGENDADO
-    const { id } = req.params; 
+    const { id } = req.params; // Recebe o ID via URL (params)
 
     if (!id) {
         return res.status(400).json({ erro: 'ID do agendamento é obrigatório.' });
@@ -543,7 +394,7 @@ const confirmarAgendamentoFinal = async (req, res) => {
         }
         
         const agendamento = rows[0];
-        // Gera o link de confirmação usando a variável de ambiente (App Base URL)
+        // Note: Recomenda-se usar HTTPS em produção
         const confirmationLink = `${process.env.APP_BASE_URL}/auth/agendamentos/confirmar/${token_confirmacao}`; 
 
         logger.audit(`Agendamento ID ${id} confirmado para AGENDADO (usando data preferencial).`, { user_id, agendamento_id: id, novo_status: 'AGENDADO' });
@@ -562,24 +413,17 @@ const confirmarAgendamentoFinal = async (req, res) => {
 
 
 // =================================================================
-// EXPORTS (TODAS AS FUNÇÕES)
+// EXPORTS (TODAS AS FUNÇÕES) - ATUALIZADO
 // =================================================================
 
 module.exports = {
-    // CRUD
     createAgendamento,
     getAgendamentos,
-    getAgendamentoById, // Adicionado
     updateStatus,
-    // Listagem Específica
-    getAgendamentosPendentes, // Adicionado
-    // Fluxo Público (Médico)
-    getConviteDetails, 
-    receberSelecaoMedico, 
-    // Fluxo de Confirmação Final (Admin)
-    confirmarAgendamentoFinal, 
-    // Fluxo de Confirmação Externa (Link)
     confirmAgendamentoByToken,
-    // Utilitário interno para MedicoController
-    createPendingAgendamentoForMedico, // Adicionado
+    // Rotas Públicas
+    getConviteDetails, // 💡 Novo endpoint público
+    receberSelecaoMedico, // 💡 Novo endpoint público
+    // Rotas de Admin (Substitui 'agendarIndividual')
+    confirmarAgendamentoFinal, 
 };
