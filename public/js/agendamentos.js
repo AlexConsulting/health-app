@@ -115,8 +115,6 @@ function getToken() {
 
     if (!token || !userName) {
         // Alerta e redireciona para login se a sessão for inválida
-        // NOTA: Em um ambiente produtivo, o "alert" deve ser substituído por um modal/toast.
-        // Como estou no ambiente Canvas, mantenho o alert.
         alert('Sessão inválida ou expirada. Faça o login novamente.');
         window.location.href = '/login.html';
         return null;
@@ -278,16 +276,14 @@ async function loadAgendamentos() {
     const unitId = unidadeFilter.value;
     
     // Constrói a query string com os filtros
-    let endpoint = `/api/agendamentos`; 
-    const queryParams = [];
-
-    if (date) queryParams.push(`date=${date}`);
-    if (status) queryParams.push(`status=${status}`);
-    if (unitId) queryParams.push(`unitId=${unitId}`);
-
-    // 💡 MUDANÇA AQUI: Adiciona '?' somente se houver parâmetros
-    if (queryParams.length > 0) {
-        endpoint += `?${queryParams.join('&')}`;
+    let endpoint = `/api/agendamentos?`; 
+    if (date) endpoint += `date=${date}&`;
+    if (status) endpoint += `status=${status}&`;
+    if (unitId) endpoint += `unitId=${unitId}&`;
+    
+    // Remove o '&' final se houver
+    if (endpoint.endsWith('&')) {
+        endpoint = endpoint.slice(0, -1);
     }
     
     try {
@@ -303,13 +299,11 @@ async function loadAgendamentos() {
         } else if (response.status === 401) {
             getToken(); // Tenta renovar ou redirecionar
         } else {
-            // Se for erro 500, o backend precisa ser inspecionado.
-            console.error(`Erro ${response.status} ao carregar agendamentos. Endpoint: ${endpoint}`, result.erro);
-            showMessage(result.erro || 'Erro ao carregar agendamentos. Verifique o console para detalhes.', 'error');
+            showMessage(result.erro || 'Erro ao carregar agendamentos.', 'error');
             renderAgendamentosTable([]); // Limpa a tabela em caso de erro
         }
     } catch (error) {
-        console.error('Erro na requisição de agendamentos (possível erro de rede/servidor):', error);
+        console.error('Erro na requisição de agendamentos:', error);
         showMessage('Erro de conexão com o servidor.', 'error');
     }
 }
@@ -409,22 +403,23 @@ function copyConviteLink(agendamentoId) {
     // O link do convite deve ser para a página selecionar-data.html
     const conviteLink = `${window.location.origin}/selecionar-data.html?id=${agendamentoId}`;
     
-    // O uso de navigator.clipboard.writeText pode falhar em iframes ou em HTTP.
-    // Usamos document.execCommand('copy') como fallback principal conforme boas práticas no Canvas.
-
-    const tempInput = document.createElement('input');
-    tempInput.value = conviteLink;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    
-    try {
+    // Verifica se a API Clipboard está disponível (requer HTTPS ou localhost)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(conviteLink).then(() => {
+            showMessage('Link do convite copiado para a área de transferência!', 'success');
+        }).catch(err => {
+            console.error('Erro ao copiar link via API Clipboard: ', err);
+            showMessage('Erro ao copiar link. Copie manualmente: ' + conviteLink, 'error');
+        });
+    } else {
+        // Fallback para navegadores mais antigos ou ambientes sem permissão
+        const tempInput = document.createElement('input');
+        tempInput.value = conviteLink;
+        document.body.appendChild(tempInput);
+        tempInput.select();
         document.execCommand('copy');
-        showMessage('Link do convite copiado para a área de transferência!', 'success');
-    } catch (err) {
-        console.error('Erro ao copiar link:', err);
-        showMessage('Erro ao copiar link. Copie manualmente: ' + conviteLink, 'error');
-    } finally {
         document.body.removeChild(tempInput);
+        showMessage('Link do convite copiado para a área de transferência (Fallback)!', 'success');
     }
 }
 
@@ -588,8 +583,6 @@ if (logoutButton) {
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userName');
-        // NOTA: Em um ambiente produtivo, o "alert" deve ser substituído por um modal/toast.
-        // Como estou no ambiente Canvas, mantenho o alert.
         alert('Sessão encerrada com sucesso.');
         window.location.href = '/login.html';
     });
