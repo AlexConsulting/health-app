@@ -11,6 +11,8 @@ const unidadeController = require('../controllers/unidadeController');
 const dashboardController = require('../controllers/dashboardController'); 
 const medicoController = require('../controllers/medicoController'); 
 const agendamentoController = require('../controllers/agendamentoController'); 
+// 🎯 NOVO: Importação do Controller de Comunicados
+const comunicadoController = require('../controllers/comunicadoController'); 
 
 // =========================================================================
 // ROTAS PROTEGIDAS (EXIGE JWT)
@@ -36,24 +38,29 @@ router.delete('/medicos/:id', authMiddleware, medicoController.deleteMedico);
 router.get('/medicos/sem-agendamento', authMiddleware, medicoController.getMedicosSemAgendamento); 
 
 // 4. Rotas de Agendamento/Treinamento
-// GET /api/agendamentos: Listar treinamentos com filtros
 router.get('/agendamentos', authMiddleware, agendamentoController.getAgendamentos);
-
-// POST /api/agendamentos: Criar um novo agendamento (PENDENTE ou AGENDADO)
 router.post('/agendamentos', authMiddleware, agendamentoController.createAgendamento); 
-
-// ❌ REMOVIDA/SUBSTITUÍDA: A lógica de 'agendar-individual' é agora tratada por updateStatus.
-// router.post('/agendamentos/agendar-individual', authMiddleware, agendamentoController.agendarIndividual); 
-
-// ✅ NOVO ADMIN: Rota para o Admin confirmar a data PRE_AGENDADA -> AGENDADO
 router.put('/agendamentos/confirmar-final/:id', authMiddleware, agendamentoController.confirmarAgendamentoFinal);
-
-// PUT /api/agendamentos/:id/status: Atualizar o status de um agendamento específico
 router.put('/agendamentos/:id/status', authMiddleware, agendamentoController.updateStatus);
 
+// 🎯 5. Rotas de Comunicados (CORRIGE O ERRO 404)
+// Estas rotas atendem as chamadas feitas no arquivo public/js/comunicados.js
+
+// Listar o histórico e status de leitura dos comunicados
+router.get('/comunicados/status', authMiddleware, comunicadoController.getComunicadosStatus);
+
+// Enviar um novo comunicado (Massa ou Específico)
+router.post('/comunicados', authMiddleware, comunicadoController.createComunicado);
+
+// Rotas auxiliares para preencher os selects do formulário de comunicados
+router.get('/comunicados/empresas', authMiddleware, comunicadoController.getEmpresas);
+router.get('/comunicados/unidades-referencia', authMiddleware, comunicadoController.getUnidadesReferencia);
+
 
 // =========================================================================
-// ROTA PÚBLICA (NÃO EXIGE JWT) - Deverá ser configurada em um roteador SEM o authMiddleware
+// ROTA PÚBLICA (NÃO EXIGE JWT)
 // =========================================================================
+// Exemplo de rota pública se necessário para a seleção de data pelo médico
+// router.get('/public/agendamento/:id', agendamentoController.getPublicAgendamento);
 
 module.exports = router;
