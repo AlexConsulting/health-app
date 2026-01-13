@@ -2,43 +2,72 @@
 
 const pool = require('../../db/config'); 
 const logger = require('../../log/logger');
-const { log } = require('console');
 
 // =========================================================================
-// FUNÇÃO ASSÍNCRONA: Processa o envio e rastreamento para cada médico
+// 🎯 FUNÇÕES AUXILIARES PARA O FRONTEND (Preenchimento de Selects)
+// =========================================================================
+
+/**
+ * Busca a lista de empresas (clientes) baseada na coluna 'empresa' da tabela de médicos
+ */
+const getEmpresas = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT empresa 
+            FROM medicos 
+            WHERE empresa IS NOT NULL AND empresa != '' 
+            ORDER BY empresa ASC
+        `);
+        res.json(result.rows.map(row => row.empresa));
+    } catch (error) {
+        logger.error(`Erro ao buscar empresas: ${error.message}`);
+        res.status(500).json({ erro: 'Erro ao carregar lista de empresas.' });
+    }
+};
+
+/**
+ * Busca a lista de unidades de referência da tabela 'unidades'
+ */
+const getUnidadesReferencia = async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, nome FROM unidades ORDER BY nome ASC');
+        res.json(result.rows);
+    } catch (error) {
+        logger.error(`Erro ao buscar unidades: ${error.message}`);
+        res.status(500).json({ erro: 'Erro ao carregar lista de unidades.' });
+    }
+};
+
+// =========================================================================
+// ⚙️ PROCESSAMENTO ASSÍNCRONO: O "Motor" de Envios
 // =========================================================================
 
 const processarEnvioComunicado = async (comunicadoId, publicoAlvo, referenciaId, referenciaType) => {
-    logger.info(`Iniciando processo de envio assíncrono para o Comunicado ID ${comunicadoId}. Público: ${publicoAlvo}. Referência ID: ${referenciaId}`);
+    logger.info(`[Background] Iniciando processamento para Comunicado ID ${comunicadoId}.`);
     
     try {
-        // 1. Obter o conteúdo do comunicado
+        // 1. Recupera o conteúdo integral do comunicado
         const comunicadoResult = await pool.query('SELECT * FROM comunicados WHERE id = $1', [comunicadoId]);
         const comunicado = comunicadoResult.rows[0];
         
         if (!comunicado) {
-            logger.error(`Comunicado ID ${comunicadoId} não encontrado durante o processamento.`);
+            logger.error(`[Background] Comunicado ${comunicadoId} não encontrado.`);
             return;
         }
 
-        // 2. Definir a Query para buscar os médicos alvos
+        // 2. Constrói a Query de Médicos Alvos (Mantendo a lógica de filtros)
         let medicosQuery = `
             SELECT m.id, m.nome, m.whatsapp 
             FROM medicos m
             WHERE m.ativo = TRUE 
-            -- Filtra apenas médicos com número de WhatsApp (telefone)
             AND m.whatsapp IS NOT NULL AND m.whatsapp != ''
         `;
         const medicosValues = [];
-        let medicoParamIndex = 1;
 
         if (publicoAlvo === 'EMPRESA' && referenciaId) {
-            // referenciaId é a STRING (nome da empresa) aqui
-            medicosQuery += ` AND m.empresa = $${medicoParamIndex++}`;
+            medicosQuery += ` AND m.empresa = $1`;
             medicosValues.push(referenciaId);
-
         } else if (publicoAlvo === 'UNIDADE' && referenciaId) {
-            // referenciaId é o INTEGER (ID da unidade) aqui
             medicosQuery = `
                 SELECT DISTINCT m.id, m.nome, m.whatsapp
                 FROM medicos m
@@ -46,427 +75,182 @@ const processarEnvioComunicado = async (comunicadoId, publicoAlvo, referenciaId,
                 WHERE m.ativo = TRUE AND m.whatsapp IS NOT NULL AND m.whatsapp != '' AND mu.unidade_id = $1
             `;
             medicosValues.push(referenciaId);
-        } else if (publicoAlvo === 'TODOS_MEDICOS') {
-            logger.info(`Comunicado ID ${comunicadoId}: Selecionando TODOS os médicos com WhatsApp.`);
         }
         
         const medicosResult = await pool.query(medicosQuery, medicosValues);
         const medicos = medicosResult.rows;
-        
-        logger.info(`Comunicado ID ${comunicadoId}: Encontrados ${medicos.length} médicos alvos.`);
-        
-        // 3. Preparar e Executar o Envio para Cada Médico (Simulação)
+        logger.info(`[Background] Comunicado ${comunicadoId}: ${medicos.length} destinatários encontrados.`);
+
+        // 3. Mapeamento de Envios (Processamento em paralelo)
         const enviosPromises = medicos.map(async (medico) => {
-            if (!medico.whatsapp) {
-                logger.warn(`Médico ID ${medico.id} sem número de WhatsApp. Pulando envio.`);
-                return { medicoId: medico.id, status: 'PULADO_SEM_WHATSAPP' };
-            }
-
-            // A. Gerar o link de rastreamento/ciência
-            const insertResult = await pool.query(`
-                INSERT INTO comunicados_medicos (comunicado_id, medico_id, status_envio, status_ciente)
-                VALUES ($1, $2, 'AGUARDANDO', 'AGUARDANDO_CIENTE')
-                RETURNING id
-            `, [comunicadoId, medico.id]);
-            
-            const rastreamentoId = insertResult.rows[0].id; // UUID gerado (UUID no DB)
-            
-            // ATENÇÃO: Substituir 'seu-dominio.com' pelo domínio real da sua API/App
-            const linkCiente = `https://seu-dominio.com/api/public/comunicado/ciente?id=${rastreamentoId}`;
-            
-            // B. Personalizar a mensagem (Usa RegEx para substituir todas as ocorrências)
-            const mensagemPersonalizada = comunicado.conteudo
-                .replace(/\[NOME_MEDICO\]/g, medico.nome)
-                .replace(/\[LINK_CIENTE\]/g, linkCiente); 
-
-            // C. SIMULAÇÃO DE ENVIO VIA WHATSAPP API (INTEGRE AQUI!)
-            // const envioSucesso = await sendWhatsAppMessage(medico.whatsapp, mensagemPersonalizada);
-            let envioSucesso = true; // SIMULAÇÃO
-            
-            if (envioSucesso) {
-                // D. Atualizar status de envio e link de rastreamento
-                await pool.query(`
-                    UPDATE comunicados_medicos
-                    SET status_envio = 'ENVIADO', data_envio = CURRENT_TIMESTAMP, link_rastreamento = $1
-                    WHERE id = $2
-                `, [linkCiente, rastreamentoId]);
+            try {
+                // A. Cria o registro de rastreamento (UUID automático no DB)
+                const insertResult = await pool.query(`
+                    INSERT INTO comunicados_medicos (comunicado_id, medico_id, status_envio, status_ciente)
+                    VALUES ($1, $2, 'AGUARDANDO', 'AGUARDANDO_CIENTE')
+                    RETURNING id
+                `, [comunicadoId, medico.id]);
                 
-                return { medicoId: medico.id, status: 'ENVIADO' };
-            } else {
-                 await pool.query(`
-                    UPDATE comunicados_medicos
-                    SET status_envio = 'ERRO'
-                    WHERE id = $1
-                `, [rastreamentoId]);
-                return { medicoId: medico.id, status: 'ERRO' };
+                const rastreamentoId = insertResult.rows[0].id;
+                const linkCiente = `https://seu-dominio.com/api/public/comunicado/ciente?id=${rastreamentoId}`;
+                
+                // B. Personalização dinâmica do conteúdo
+                const mensagemFinal = comunicado.conteudo
+                    .replace(/\[NOME_MEDICO\]/g, medico.nome)
+                    .replace(/\[LINK_CIENTE\]/g, linkCiente);
+
+                // C. Integração WhatsApp (Simulada - Substituir pela chamada da API real)
+                let envioSucesso = true; 
+
+                if (envioSucesso) {
+                    await pool.query(`
+                        UPDATE comunicados_medicos
+                        SET status_envio = 'ENVIADO', data_envio = CURRENT_TIMESTAMP, link_rastreamento = $1
+                        WHERE id = $2
+                    `, [linkCiente, rastreamentoId]);
+                } else {
+                    await pool.query(`UPDATE comunicados_medicos SET status_envio = 'ERRO' WHERE id = $1`, [rastreamentoId]);
+                }
+            } catch (err) {
+                logger.error(`Erro no destinatário ${medico.id}: ${err.message}`);
             }
         });
         
-        // Espera todos os envios serem processados (capturando erros individuais)
-        await Promise.all(enviosPromises.map(p => p.catch(e => {
-             logger.error(`Erro durante o envio individual de comunicado: ${e.message}`);
-             return { status: 'ERRO_INDIVIDUAL' };
-        })));
+        await Promise.all(enviosPromises);
         
-        // 4. Atualizar o status geral do comunicado
+        // 4. Marca finalização oficial
         await pool.query('UPDATE comunicados SET data_envio_oficial = CURRENT_TIMESTAMP WHERE id = $1', [comunicadoId]);
-        logger.audit(`Processo de envio assíncrono COMPLETO para o Comunicado ID ${comunicadoId}.`);
+        logger.audit(`[Background] Comunicado ID ${comunicadoId} finalizado com sucesso.`);
 
     } catch (error) {
-        logger.error(`Erro fatal no processamento assíncrono do Comunicado ID ${comunicadoId}: ${error.message}`, { comunicado_id: comunicadoId, error_stack: error.stack });
+        logger.error(`[Background] Erro crítico no Comunicado ${comunicadoId}: ${error.message}`);
     }
 };
 
-
 // =========================================================================
-// ROTA PROTEGIDA: Cria e Salva o Comunicado (Dispara o processo acima)
+// 📄 ROTAS PRINCIPAIS (Controllers expostos para as rotas)
 // =========================================================================
 
 const createComunicado = async (req, res) => {
-    // user_id deve ser UUID. referência: req.user.id deve ser um UUID
     const user_id = req.user.id; 
     const { titulo, conteudo, publico_alvo, referencia_id, referencia_type } = req.body; 
 
-    // Variáveis para armazenar o valor de referência ajustado para o DB (tipagem)
-    let referenciaIdParaDb = null;
-    let referenciaParaProcessamento = null;
-    let referenciaTypeParaDb = null;
+    // Validações de sanidade
+    if (!titulo || titulo.trim() === '') return res.status(400).json({ erro: 'Título é obrigatório.' });
+    if (!conteudo || conteudo.trim() === '') return res.status(400).json({ erro: 'Conteúdo é obrigatório.' });
 
+    let refIdDb = null;
+    let refProc = null;
+    let refTypeDb = publico_alvo === 'TODOS_MEDICOS' ? 'TODOS' : publico_alvo;
 
-    // ----------------------------------------------------------------------
-    // VALIDAÇÕES E AJUSTE DE TIPAGEM 🎯
-    // ----------------------------------------------------------------------
-
-    if (!titulo || titulo.trim().length === 0) {
-        return res.status(400).json({ erro: 'O Título do comunicado é obrigatório.' });
+    // Lógica de tipos para o Banco de Dados
+    if (publico_alvo === 'UNIDADE') {
+        refIdDb = parseInt(referencia_id, 10);
+        refProc = refIdDb;
+    } else if (publico_alvo === 'EMPRESA') {
+        refIdDb = null; // Coluna INT no DB não aceita String
+        refProc = referencia_id; // String do nome da empresa para a query
     }
-    if (!conteudo || conteudo.trim().length === 0) {
-        return res.status(400).json({ erro: 'O Conteúdo do comunicado é obrigatório.' });
-    }
-    
-    const ALVOS_VALIDOS = ['TODOS_MEDICOS', 'EMPRESA', 'UNIDADE'];
-    if (!publico_alvo || !ALVOS_VALIDOS.includes(publico_alvo)) {
-          return res.status(400).json({ erro: 'Público alvo inválido. Opções: TODOS_MEDICOS, EMPRESA, UNIDADE.' });
-    }
-
-
-    if (publico_alvo !== 'TODOS_MEDICOS') {
-        if (!referencia_id) {
-            return res.status(400).json({ erro: `ID de referência (Empresa/Unidade) é obrigatório para o público ${publico_alvo}.` });
-        }
-        
-        let checkQuery = '';
-        let checkValue = '';
-
-        if (publico_alvo === 'UNIDADE') {
-            const parsedReferenciaId = parseInt(referencia_id, 10);
-            if (isNaN(parsedReferenciaId)) {
-                return res.status(400).json({ erro: `ID de referência da Unidade deve ser um número inteiro válido.` });
-            }
-            
-            // 🎯 AJUSTE DE TIPAGEM: UNIDADE usa o ID (INTEGER) tanto para DB quanto para Processamento
-            referenciaIdParaDb = parsedReferenciaId;
-            referenciaParaProcessamento = parsedReferenciaId;
-            referenciaTypeParaDb = 'UNIDADE';
-            
-            checkQuery = 'SELECT id FROM unidades WHERE id = $1';
-            checkValue = parsedReferenciaId;
-
-            if (referencia_type !== 'UNIDADE') {
-                return res.status(400).json({ erro: 'O tipo de referência deve ser "UNIDADE" para este público.' });
-            }
-
-        } else if (publico_alvo === 'EMPRESA') {
-            
-            // 🎯 AJUSTE DE TIPAGEM: EMPRESA usa o NOME (STRING) para Processamento, mas a coluna DB é INTEGER (deve ser NULL)
-            referenciaIdParaDb = null; // A coluna referencia_id no DB é INTEGER, deve ser NULL se for STRING
-            referenciaParaProcessamento = referencia_id; // Passamos a STRING para o filtro de médicos
-            referenciaTypeParaDb = 'EMPRESA';
-            
-            checkQuery = 'SELECT cliente FROM unidades WHERE cliente = $1 LIMIT 1';
-            checkValue = referencia_id;
-
-            if (referencia_type !== 'EMPRESA') {
-                return res.status(400).json({ erro: 'O tipo de referência deve ser "EMPRESA" para este público.' });
-            }
-        }
-        
-        // Verificação se o ID/Nome existe no banco
-        try {
-            const checkResult = await pool.query(checkQuery, [checkValue]);
-            if (checkResult.rows.length === 0) {
-                return res.status(404).json({ erro: `${publico_alvo} com ID/Nome ${referencia_id} não encontrado(a).` });
-            }
-        } catch (dbError) {
-             logger.error(`Erro ao verificar existência de ${publico_alvo}: ${dbError.message}`);
-             return res.status(500).json({ erro: `Erro interno ao verificar o ID/Nome da referência.` });
-        }
-
-    } else {
-        // publico_alvo === 'TODOS_MEDICOS'
-        referenciaIdParaDb = null;
-        referenciaParaProcessamento = null;
-        referenciaTypeParaDb = 'TODOS'; 
-    }
-    
-    // ----------------------------------------------------------------------
     
     try {
-        // 1. Salvar o comunicado na tabela
-        const insertQuery = `
+        const insertResult = await pool.query(`
             INSERT INTO comunicados (titulo, conteudo, publico_alvo, referencia_id, referencia_type, enviado_por_id)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id, data_criacao
-        `;
+        `, [titulo, conteudo, publico_alvo, refIdDb, refTypeDb, user_id]);
         
-        // 🎯 INSERÇÃO: Usando a variável tipada corretamente
-        const insertValues = [
-            titulo, 
-            conteudo, 
-            publico_alvo, 
-            referenciaIdParaDb, 
-            referenciaTypeParaDb, 
-            user_id 
-        ];
+        const comunicadoId = insertResult.rows[0].id;
         
-        const result = await pool.query(insertQuery, insertValues);
-        const comunicadoId = result.rows[0].id;
+        // Disparo assíncrono (Fire and Forget)
+        processarEnvioComunicado(comunicadoId, publico_alvo, refProc, refTypeDb);
         
-        logger.audit(`Novo comunicado ID ${comunicadoId} criado por Usuário ID ${user_id}.`);
-
-        // 2. Disparar o processo de envio assíncrono 
-        // 🎯 CORREÇÃO: Passando as variáveis de processamento ajustadas
-        processarEnvioComunicado(comunicadoId, publico_alvo, referenciaParaProcessamento, referenciaTypeParaDb);
-        
-        // 3. Resposta imediata ao frontend
         return res.status(200).json({
-            mensagem: 'Comunicado salvo. O envio assíncrono via WhatsApp foi iniciado.',
-            comunicado: {
-                id: comunicadoId,
-                data_criacao: result.rows[0].data_criacao
-            }
+            mensagem: 'Comunicado salvo com sucesso. Processamento de envio em curso.',
+            comunicado: { id: comunicadoId, data_criacao: insertResult.rows[0].data_criacao }
         });
 
     } catch (error) {
-        logger.error(`Erro ao criar comunicado: ${error.message}`, { 
-            user_id, 
-            payload: req.body, 
-            error_stack: error.stack 
-        });
-        return res.status(500).json({ 
-            erro: 'Erro interno ao salvar o comunicado.',
-            detalhe: error.message 
-        });
+        logger.error(`Erro ao salvar comunicado: ${error.message}`);
+        return res.status(500).json({ erro: 'Erro interno ao salvar o comunicado.' });
     }
 };
-
-
-// =========================================================================
-// ROTA PÚBLICA: Registra a Ciência (Acessada pelo link do WhatsApp)
-// =========================================================================
 
 const registerCiente = async (req, res) => {
-    // O rastreamentoId é o UUID da tabela comunicados_medicos
     const rastreamentoId = req.query.id; 
-
-    if (!rastreamentoId) {
-        return res.status(400).send('ID de rastreamento de ciência inválido ou ausente.');
-    }
+    if (!rastreamentoId) return res.status(400).send('ID de rastreamento inválido.');
 
     try {
-        // 1. Atualizar o registro no banco de dados, se o status ainda for 'AGUARDANDO_CIENTE'
-        const updateQuery = `
+        const result = await pool.query(`
             UPDATE comunicados_medicos
-            SET status_ciente = 'CIENTE', 
-                data_ciente = CURRENT_TIMESTAMP
+            SET status_ciente = 'CIENTE', data_ciente = CURRENT_TIMESTAMP
             WHERE id = $1 AND status_ciente = 'AGUARDANDO_CIENTE'
             RETURNING medico_id, comunicado_id
+        `, [rastreamentoId]);
+        
+        // Template HTML para resposta ao médico
+        const template = (status, msg) => `
+            <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ciência</title>
+            <style>body{font-family:sans-serif;text-align:center;padding:50px;} .box{border:1px solid #ddd;padding:20px;display:inline-block;border-radius:10px;} .blue{color:#007bff;}</style>
+            </head><body><div class="box"><h2 class="blue">${status}</h2><p>${msg}</p></div></body></html>
         `;
-        
-        const result = await pool.query(updateQuery, [rastreamentoId]);
-        
-        // 2. Tratar a resposta para o médico (HTML amigável)
-        
-        let medicoNome = 'Médico(a)';
-        let comunicadoTitulo = 'Comunicado Oficial';
-
-        // Tenta buscar as informações do médico e comunicado (para personalizar a mensagem)
-        try {
-             const infoResult = await pool.query(`
-                 SELECT m.nome AS medico_nome, c.titulo AS comunicado_titulo
-                 FROM comunicados_medicos cm
-                 JOIN medicos m ON cm.medico_id = m.id
-                 JOIN comunicados c ON cm.comunicado_id = c.id
-                 WHERE cm.id = $1
-             `, [rastreamentoId]);
-
-             if (infoResult.rows.length > 0) {
-                 medicoNome = infoResult.rows[0].medico_nome;
-                 comunicadoTitulo = infoResult.rows[0].comunicado_titulo;
-             }
-        } catch (e) { 
-            logger.warn(`Falha ao buscar info de médico/comunicado para ID ${rastreamentoId}: ${e.message}`);
-        }
-
 
         if (result.rowCount === 0) {
-            // Caso 1: ID inválido ou ciência já registrada
-            logger.warn(`Tentativa de ciência duplicada/inválida para ID: ${rastreamentoId}`);
-            
-            return res.status(200).send(`
-                <!DOCTYPE html><html><head><title>Ciência Registrada</title>
-                <style>body{font-family: Arial, sans-serif; text-align: center; padding: 50px;} .success{color: #28a745;}</style>
-                </head><body>
-                <h2 class="success">✅ Ciência já Registrada</h2>
-                <p>Olá Dr(a) ${medicoNome}, o registro de ciência para o comunicado <strong>"${comunicadoTitulo}"</strong> já havia sido confirmado anteriormente.</p>
-                <p>Obrigado pela atenção.</p>
-                </body></html>
-            `);
+            return res.status(200).send(template('Ciência Confirmada', 'Esta ciência já foi registrada anteriormente em nosso sistema.'));
         }
 
-        // Caso 2: Sucesso na atualização (primeiro clique de Ciente)
-        const medicoId = result.rows[0].medico_id;
-        
-        logger.audit(`Ciência registrada com sucesso para o Comunicado ID ${result.rows[0].comunicado_id} pelo Médico ID ${medicoId}.`, { medico_id: medicoId, rastreamento_id: rastreamentoId });
-
-        // Resposta de sucesso em formato HTML amigável
-        return res.status(200).send(`
-            <!DOCTYPE html><html><head><title>Ciência Confirmada</title>
-            <style>body{font-family: Arial, sans-serif; text-align: center; padding: 50px;} .success{color: #007bff;}</style>
-            </head><body>
-            <h2 class="success">👍 Sucesso!</h2>
-            <p>Olá Dr(a) ${medicoNome}, sua ciência sobre o comunicado <strong>"${comunicadoTitulo}"</strong> foi registrada em nosso sistema com data e hora. </p>
-            <p>Agradecemos a sua confirmação e colaboração.</p>
-            </body></html>
-        `);
-
+        return res.status(200).send(template('Sucesso!', 'A sua ciência foi registrada com data e hora. Obrigado pela atenção.'));
     } catch (error) {
-        logger.error(`Erro ao registrar ciência do comunicado: ${error.message}`, { rastreamentoId, error_stack: error.stack });
-        return res.status(500).send('Erro interno ao processar a confirmação de ciência. Tente novamente mais tarde.');
+        logger.error(`Erro ciência: ${error.message}`);
+        return res.status(500).send('Erro ao processar a ciência.');
     }
 };
-
-
-// =========================================================================
-// ROTA PROTEGIDA: Obtém o Status de todos os Comunicados Enviados
-// =========================================================================
 
 const getComunicadosStatus = async (req, res) => {
-    
     try {
         const query = `
-            SELECT
-                c.id,
-                c.titulo,
-                c.publico_alvo,
-                c.data_envio_oficial,
+            SELECT c.id, c.titulo, c.publico_alvo, c.data_envio_oficial,
                 COUNT(cm.id) FILTER (WHERE cm.status_envio = 'ENVIADO') AS total_enviado,
                 COUNT(cm.id) FILTER (WHERE cm.status_ciente = 'CIENTE') AS total_ciente
-            FROM
-                comunicados c
-            LEFT JOIN
-                comunicados_medicos cm ON c.id = cm.comunicado_id
-            GROUP BY
-                c.id
-            ORDER BY
-                c.data_envio_oficial DESC NULLS LAST;
+            FROM comunicados c
+            LEFT JOIN comunicados_medicos cm ON c.id = cm.comunicado_id
+            GROUP BY c.id
+            ORDER BY c.data_envio_oficial DESC NULLS LAST;
         `;
-
         const result = await pool.query(query);
-        const comunicados = result.rows.map(row => {
-            const total_enviado = parseInt(row.total_enviado, 10) || 0;
-            const total_ciente = parseInt(row.total_ciente, 10) || 0;
-            
-            let taxa = 0;
-            if (total_enviado > 0) {
-                taxa = (total_ciente / total_enviado) * 100;
-            }
-
-            return {
-                id: row.id,
-                titulo: row.titulo,
-                publico_alvo: row.publico_alvo,
-                data_envio_oficial: row.data_envio_oficial,
-                total_enviado: total_enviado,
-                total_ciente: total_ciente,
-                taxa_ciente: taxa.toFixed(1) 
-            };
-        });
-        
-        return res.status(200).json(comunicados);
-
+        const formatado = result.rows.map(row => ({
+            ...row,
+            taxa_ciente: row.total_enviado > 0 ? ((row.total_ciente / row.total_enviado) * 100).toFixed(1) : "0.0"
+        }));
+        return res.status(200).json(formatado);
     } catch (error) {
-        logger.error(`Erro ao buscar status dos comunicados: ${error.message}`, { error_stack: error.stack });
-        return res.status(500).json({ erro: 'Erro interno ao buscar a lista de comunicados.' });
+        return res.status(500).json({ erro: 'Erro ao buscar lista de comunicados.' });
     }
 };
-
-
-// =========================================================================
-// ROTA PROTEGIDA: Obtém os Detalhes de um Comunicado (Por Recipiente)
-// =========================================================================
 
 const getComunicadoDetails = async (req, res) => {
     const comunicadoId = req.params.id;
-    
-    if (!comunicadoId || isNaN(parseInt(comunicadoId))) {
-        return res.status(400).json({ erro: 'ID do comunicado inválido.' });
-    }
-    
     try {
-        // 1. Buscar o título do comunicado
-        const comunicadoHeaderResult = await pool.query('SELECT titulo FROM comunicados WHERE id = $1', [comunicadoId]);
-        if (comunicadoHeaderResult.rows.length === 0) {
-            return res.status(404).json({ erro: 'Comunicado não encontrado.' });
-        }
-        const comunicadoTitulo = comunicadoHeaderResult.rows[0].titulo;
-
-        // 2. Buscar os detalhes de envio e ciência para CADA médico
-        const detailsQuery = `
-            SELECT
-                cm.id AS rastreamento_id,
-                m.id AS medico_id,
-                m.nome AS medico_nome,
-                m.whatsapp,
-                m.empresa AS empresa_nome, -- 🎯 USANDO A COLUNA EMPRESA (nome do cliente) NA TABELA MEDICOS
-                cm.status_envio,
-                cm.data_envio,
-                cm.status_ciente,
-                cm.data_ciente
-            FROM
-                comunicados_medicos cm
-            JOIN
-                medicos m ON cm.medico_id = m.id
-            WHERE
-                cm.comunicado_id = $1
-            ORDER BY
-                m.nome;
-        `;
-        
-        const detailsResult = await pool.query(detailsQuery, [comunicadoId]);
-        
-        // 3. Formatar a resposta
-        return res.status(200).json({
-            comunicado_id: comunicadoId,
-            titulo: comunicadoTitulo,
-            total_recipients: detailsResult.rows.length,
-            recipients: detailsResult.rows
-        });
-
+        const result = await pool.query(`
+            SELECT cm.id, m.nome as medico_nome, m.whatsapp, cm.status_envio, cm.data_envio, cm.status_ciente, cm.data_ciente
+            FROM comunicados_medicos cm
+            JOIN medicos m ON cm.medico_id = m.id
+            WHERE cm.comunicado_id = $1 ORDER BY m.nome;
+        `, [comunicadoId]);
+        res.status(200).json(result.rows);
     } catch (error) {
-        logger.error(`Erro ao buscar detalhes do comunicado ID ${comunicadoId}: ${error.message}`, { comunicadoId, error_stack: error.stack });
-        return res.status(500).json({ erro: 'Erro interno ao buscar os detalhes do comunicado.' });
+        res.status(500).json({ erro: 'Erro ao buscar detalhes do comunicado.' });
     }
 };
 
-
-// =================================================================
-// EXPORTS (TODAS AS FUNÇÕES)
-// =================================================================
+// =========================================================================
+// EXPORTS
+// =========================================================================
 
 module.exports = {
     createComunicado,
     registerCiente, 
     getComunicadosStatus,
     getComunicadoDetails,
+    getEmpresas,
+    getUnidadesReferencia
 };
