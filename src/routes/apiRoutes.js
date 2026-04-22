@@ -11,11 +11,12 @@ const unidadeController = require('../controllers/unidadeController');
 const dashboardController = require('../controllers/dashboardController'); 
 const medicoController = require('../controllers/medicoController'); 
 const agendamentoController = require('../controllers/agendamentoController'); 
-// 🎯 NOVO: Importação do Controller de Comunicados
 const comunicadoController = require('../controllers/comunicadoController'); 
+// 💡 IMPORTANTE: Adicionado o controller de Ativação de Senha
+const ativacoesController = require('../controllers/ativacoesSenhaController'); 
 
 // =========================================================================
-// ROTAS PROTEGIDAS (EXIGE JWT)
+// ROTAS PROTEGIDAS (EXIGE JWT - Uso Administrativo)
 // =========================================================================
 
 // 1. Rotas de Unidades
@@ -24,43 +25,52 @@ router.get('/unidades', authMiddleware, unidadeController.getUnidades);
 // 2. Rotas do Dashboard
 router.get('/dashboard/kpis', authMiddleware, dashboardController.getKpis);
 
-// 3. Rotas de Médico (CRUD)
+// 3. Rotas de Médicos (CRUD)
 router.post('/medicos', authMiddleware, medicoController.createMedico); 
 router.get('/medicos', authMiddleware, medicoController.getMedicos); 
-
-// Rota para buscar médico por ID (necessário para o modo de EDIÇÃO)
 router.get('/medicos/:id', authMiddleware, medicoController.getMedicoById); 
-
 router.put('/medicos/:id', authMiddleware, medicoController.updateMedico);
 router.delete('/medicos/:id', authMiddleware, medicoController.deleteMedico); 
-
-// Rota para listar médicos sem agendamento
 router.get('/medicos/sem-agendamento', authMiddleware, medicoController.getMedicosSemAgendamento); 
 
-// 4. Rotas de Agendamento/Treinamento
+// 4. Rotas de Agendamento/Treinamento (Administrativo)
 router.get('/agendamentos', authMiddleware, agendamentoController.getAgendamentos);
 router.post('/agendamentos', authMiddleware, agendamentoController.createAgendamento); 
 router.put('/agendamentos/confirmar-final/:id', authMiddleware, agendamentoController.confirmarAgendamentoFinal);
 router.put('/agendamentos/:id/status', authMiddleware, agendamentoController.updateStatus);
 
-// 🎯 5. Rotas de Comunicados (CORRIGE O ERRO 404)
-// Estas rotas atendem as chamadas feitas no arquivo public/js/comunicados.js
+// 5. 💡 NOVAS ROTAS: Ativação de Senha (Administrativo)
+// Note que usamos os nomes de funções que definimos no export do controller
+// 💡 AJUSTE: getAtivacoes -> getAgendamentosAdmin
+router.get('/ativacoes-senha', authMiddleware, ativacoesController.getAgendamentosAdmin);
+// 💡 AJUSTE: gerarConviteAtivacao -> enviarCredenciaisAtivacao
+router.post('/ativacoes-senha/gerar-convite/:id', authMiddleware, ativacoesController.enviarCredenciaisAtivacao);
+router.put('/ativacoes-senha/finalizar/:id', authMiddleware, ativacoesController.finalizarMeet);
 
-// Listar o histórico e status de leitura dos comunicados
-router.get('/comunicados/status', authMiddleware, comunicadoController.getComunicadosStatus);
-
-// Enviar um novo comunicado (Massa ou Específico)
+// 6. Rotas de Comunicados 🎯
+router.get('/empresas', authMiddleware, comunicadoController.getEmpresas);
+router.get('/unidades-referencia', authMiddleware, comunicadoController.getUnidadesReferencia);
 router.post('/comunicados', authMiddleware, comunicadoController.createComunicado);
-
-// Rotas auxiliares para preencher os selects do formulário de comunicados
-router.get('/comunicados/empresas', authMiddleware, comunicadoController.getEmpresas);
-router.get('/comunicados/unidades-referencia', authMiddleware, comunicadoController.getUnidadesReferencia);
-
+router.get('/comunicados/status', authMiddleware, comunicadoController.getComunicadosStatus);
+router.get('/comunicados/detalhes/:id', authMiddleware, comunicadoController.getComunicadoDetails);
 
 // =========================================================================
-// ROTA PÚBLICA (NÃO EXIGE JWT)
+// ROTAS PÚBLICAS (NÃO EXIGE JWT - Uso dos Médicos via link externo)
 // =========================================================================
-// Exemplo de rota pública se necessário para a seleção de data pelo médico
-// router.get('/public/agendamento/:id', agendamentoController.getPublicAgendamento);
+
+// --- FLUXO DE TREINAMENTOS ---
+router.get('/public/agendamentos/detalhes/:id', agendamentoController.getConviteDetails);
+router.get('/public/agendamentos/disponibilidade', agendamentoController.getDisponibilidade);
+router.put('/public/agendamentos/selecionar-horario/:id', agendamentoController.receberSelecaoMedico);
+router.get('/public/agendamentos/confirmar/:token', agendamentoController.confirmAgendamentoByToken);
+
+// --- 💡 FLUXO DE ATIVAÇÃO DE SENHA (MÉDICO) ---
+// Estas rotas são usadas pela tela "ativacao-senha.html" pública
+router.get('/public/ativacao/janelas', ativacoesController.getJanelasDisponiveis);
+router.get('/public/ativacao/medico/:token', ativacoesController.getMedicoDataByToken);
+router.post('/public/ativacao/agendar', ativacoesController.agendarAtivacaoSenha);
+
+// --- COMUNICADOS ---
+router.get('/public/comunicado/ciente', comunicadoController.registerCiente);
 
 module.exports = router;
