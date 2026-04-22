@@ -4,104 +4,159 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Health App - Dashboard Operacional</title>
-    <link rel="stylesheet" href="css/style.css"> 
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* === ESTILOS DO WIDGET DE CHAT SOBREPOSTO (MANTIDOS) === */
+        #chat-widget-container {
+            display: none; 
+            width: 350px; 
+            height: 500px; 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px;
+            background: #fff; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            border-radius: 15px; 
+            z-index: 10000; 
+            overflow: hidden;
+            flex-direction: column;
+            border: 1px solid #ddd;
+        }
+
+        #chat-header-widget { 
+            background: #007bff; 
+            color: white; 
+            padding: 15px; 
+            font-weight: bold; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+
+        #mensagens-box-widget { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 15px; 
+            background: #f9f9f9; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+
+        .msg-chat { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+        .msg-usuario { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-ti { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+
+        .input-group-chat { display: flex; padding: 12px; background: #fff; border-top: 1px solid #eee; }
+        #msg-input-chat { flex: 1; border: 1px solid #ddd; padding: 8px 15px; border-radius: 20px; outline: none; }
+        
+        .btn-enviar-chat { 
+            background: #007bff; color: white; border: none; width: 35px; height: 35px; 
+            border-radius: 50%; margin-left: 8px; cursor: pointer; 
+        }
+
+        #close-chat-widget { cursor: pointer; opacity: 0.8; }
+        #close-chat-widget:hover { opacity: 1; }
+
+        /* Estilos extras para garantir que a Agenda Visual apareça corretamente */
+        .full-width { grid-column: 1 / -1; }
+
+        /* 🎯 NOVO: CENTRALIZAÇÃO DA AGENDA DA SEMANA */
+        #weekly-calendar {
+            display: flex;
+            justify-content: center; /* Centraliza os dias na tela */
+            gap: 15px;
+            flex-wrap: wrap;
+            padding: 10px 0;
+        }
+
+        .calendar-day-column {
+            flex: 1;
+            min-width: 160px;
+            max-width: 220px; /* Evita que os cartões fiquem esticados demais */
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
     
     <div class="app-shell">
-        
         <aside class="sidebar">
             <div class="logo-area">
                 <div class="logo-icon">⚕️</div>
                 <span>Health App</span>
             </div>
+            
             <nav class="main-nav">
                 <ul>
-                    <li class="active"><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                    
-                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
-                    
-                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
-                    
-                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
-                 
-                    <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
-                    <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
+                    <li class="active"><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>                    
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>                    
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>                    
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>  
+					<li><a href="/ativacao-senha.html"><i class="fas fa-calendar-alt"></i> Ativação de Senha</a></li> 					
+                    <li><a href="/comunicados.html"><i class="fas fa-envelope"></i> Comunicados</a></li>
+                    <li>
+                        <a href="https://alexconsulting.github.io/produtividade/dashboard.html" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-rocket"></i> Produtividade 
+                            <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px;"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://app.pm2.io/bucket/6967936da954569c6e62b50e/backend/overview/servers" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-server"></i> Status Servidor
+                            <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px;"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:void(0);" onclick="toggleChat()"><i class="fas fa-headset"></i> Suporte</a>
+                    </li>
+					<li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Eventos</a></li>
+					<li><a href="/treinamentos.html"><i class="fas fa-book-reader"></i> Treinamentos</a></li>
+					<li><a href="/admin-treinamentos.html" target="_blank"> <i class="fas fa-clipboard-check"></i> Admin Treinamentos</a></li>
+                    <li><a href="/relatorios.html"><i class="fas fa-file-invoice"></i> Relatórios</a></li>
                 </ul>
             </nav>
         </aside>
 
         <main class="main-content">
-		<header class="top-bar">
-        <a href="#" id="menu-toggle" class="btn-menu"> 
-            <i class="fas fa-bars"></i>
-			</a>
-        
-			<div class="user-info">
-            <span id="welcome-message">Olá, [Nome do Usuário]</span>
-            <span class="current-datetime" id="current-datetime"></span>
-			</div>
-				<button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
-			</header>
+            <header class="top-bar">
+                <div class="user-info">
+                    <span id="welcome-message">Olá, [Nome do Usuário]</span>
+                    <span class="current-datetime" id="current-datetime"></span>
+                </div>
+                <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </header>
 
             <section class="dashboard-grid">
-                
                 <div class="kpi-cards">
-                    
-                    <div class="card kpi-card">
-                        <i class="fas fa-hospital-user"></i>
-                        <p>Médicos Cadastrados</p>
-                        <h2 id="total-medicos">0</h2>
-                    </div>
-                    
-                    <div class="card kpi-card">
-                        <i class="fas fa-calendar-week"></i>
-                        <p>Agendamentos da Semana</p>
-                        <h2 id="agendamentos-semana">0</h2>
-                    </div>
-                    
-                    <div class="card kpi-card">
-                        <i class="fas fa-user-clock"></i>
-                        <p>Treinamentos Pré Agendados (Semana)</p>
-                        <h2 id="treinamentos-pre-agendados-semana">0</h2>
-                    </div>
-                    
-                    <div class="card kpi-card">
-                        <i class="fas fa-clipboard-check"></i>
-                        <p>Treinamentos Realizados (Semana)</p>
-                        <h2 id="treinamentos-realizados-semana">0</h2>
-                    </div>
-                    
-                    <div class="card kpi-card">
-                        <i class="fas fa-envelope-open-text"></i>
-                        <p>Convites Enviados (Semana)</p>
-                        <h2 id="convites-enviados-semana">0</h2>
-                    </div>
-                    
-                    <div class="card kpi-card">
-                        <i class="fas fa-handshake"></i>
-                        <p>Atendimentos (Ano)</p>
-                        <h2 id="atendimentos-ano">0</h2>
+                    <div class="card kpi-card"><i class="fas fa-hospital-user"></i><p>Médicos Cadastrados</p><h2 id="total-medicos">0</h2></div>
+                    <div class="card kpi-card"><i class="fas fa-calendar-week"></i><p>Agendamentos (Semana)</p><h2 id="agendamentos-semana">0</h2></div>
+                    <div class="card kpi-card"><i class="fas fa-chalkboard-teacher"></i><p>Integrações (Mês)</p><h2 id="treinamentos-mes">0</h2></div>
+                    <div class="card kpi-card"><i class="fas fa-check-circle"></i><p>Atendimentos (Ano)</p><h2 id="atendimentos-ano">0</h2></div>
+                </div>
+
+                <div class="card operational-card full-width">
+                    <h3><i class="fas fa-calendar-alt"></i> Agenda da Semana (Integrações Agendadas)</h3>
+                    <div class="weekly-calendar-container" id="weekly-calendar">
+                        <p class="placeholder-text">Carregando calendário...</p>
                     </div>
                 </div>
 
                 <div class="card operational-card full-width">
                     <h3>🔍 Pesquisa de Agendamentos</h3>
-                    
                     <div class="list-filters appointment-filters">
                         <label for="appointment-date">Data:</label>
                         <input type="date" id="appointment-date" class="filter-input">
-                        
                         <label for="appointment-unit">Unidade:</label>
-                        <select id="appointment-unit" class="filter-input">
-                            <option value="">Todas as Unidades</option>
-                            </select>
-                        
+                        <select id="appointment-unit" class="filter-input"><option value="">Todas as Unidades</option></select>
                         <button class="btn-primary small">Buscar Agendamentos</button>
                     </div>
-
                     <div class="scrollable-list" id="agendamentos-list">
                          <p class="placeholder-text">Use o filtro acima para buscar agendamentos específicos.</p>
                     </div>
@@ -110,8 +165,7 @@
                 <div class="card operational-card half-width">
                     <h3>⚠️ Pendências Operacionais</h3>
                     <ul class="simple-list" id="pendencias-list">
-                        <li>Termos não lidos: <span>5</span></li>
-                    </ul>
+                        </ul>
                 </div>
                 
                 <div class="card operational-card half-width">
@@ -121,12 +175,82 @@
                         <li>Mudança de Horário na Unidade X (05/12)</li>
                     </ul>
                 </div>
-
             </section>
         </main>
-        
+    </div>
+
+    <div id="chat-widget-container">
+        <div id="login-area-chat" style="padding: 30px; text-align: center;">
+            <i class="fas fa-tools" style="font-size: 3rem; color: #007bff; margin-bottom: 10px;"></i>
+            <h3>Suporte TI</h3>
+            <input type="text" id="nome-usuario-chat" placeholder="Seu nome completo..." style="width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px;">
+            <button id="btn-iniciar-chat" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Iniciar Conversa</button>
+        </div>
+
+        <div id="chat-area-widget" style="display: none; flex-direction: column; height: 100%;">
+            <div id="chat-header-widget">
+                <span><i class="fas fa-circle" style="color: #28a745; font-size: 10px;"></i> Atendimento Ativo</span>
+                <i class="fas fa-times" id="close-chat-widget" onclick="toggleChat()"></i>
+            </div>
+            <div id="mensagens-box-widget"></div>
+            <div class="input-group-chat">
+                <input type="text" id="msg-input-chat" placeholder="Digite sua mensagem...">
+                <button class="btn-enviar-chat" id="btn-enviar-msg"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
     </div>
 
     <script src="js/dashboard.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Lógica do Chat Integrada (MANTIDA 100%)
+        const socket = io({ path: '/socket.io-handler/' });
+        let sessaoId = null;
+
+        function toggleChat() {
+            const chat = document.getElementById('chat-widget-container');
+            chat.style.display = (chat.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        document.getElementById('btn-iniciar-chat').onclick = () => {
+            const nome = document.getElementById('nome-usuario-chat').value.trim();
+            if (nome.length < 3) return alert("Digite seu nome completo.");
+            
+            socket.emit('iniciar_sessao', nome);
+            document.getElementById('login-area-chat').style.display = 'none';
+            document.getElementById('chat-area-widget').style.display = 'flex';
+        };
+
+        socket.on('sessao_criada', (id) => { 
+            sessaoId = id; 
+        });
+
+        const enviarMsg = () => {
+            const input = document.getElementById('msg-input-chat');
+            const texto = input.value.trim();
+            if (texto && sessaoId) {
+                socket.emit('enviar_mensagem', { 
+                    sessao_id: sessaoId, 
+                    remetente: 'usuario', 
+                    mensagem: texto 
+                });
+                input.value = '';
+            }
+        };
+
+        document.getElementById('btn-enviar-msg').onclick = enviarMsg;
+        document.getElementById('msg-input-chat').onkeypress = (e) => { if(e.key === 'Enter') enviarMsg(); };
+
+        socket.on('nova_mensagem', (data) => {
+            if (data.sessao_id == sessaoId) {
+                const box = document.getElementById('mensagens-box-widget');
+                const div = document.createElement('div');
+                div.className = `msg-chat ${data.remetente === 'usuario' ? 'msg-usuario' : 'msg-ti'}`;
+                div.innerHTML = `<strong>${data.remetente === 'usuario' ? 'Você' : 'TI'}:</strong><br>${data.mensagem}`;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
+        });
+    </script>
 </body>
 </html>

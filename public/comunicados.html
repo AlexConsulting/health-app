@@ -7,6 +7,42 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Estilos específicos para a barra de progresso e modal de detalhes */
+        .progress-wrapper {
+            margin: 20px 0;
+            display: none; /* Escondido por padrão */
+        }
+        .progress-container {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            height: 25px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--color-secondary);
+            color: white;
+            text-align: center;
+            line-height: 25px;
+            font-weight: bold;
+            transition: width 0.4s ease;
+        }
+        .details-modal {
+            max-width: 800px !important;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .status-enviado { background: #d1ecf1; color: #0c5460; }
+        .status-erro { background: #f8d7da; color: #721c24; }
+        .status-ciente { background: #d4edda; color: #155724; }
+    </style>
 </head>
 <body>
     
@@ -20,13 +56,9 @@
             <nav class="main-nav">
                 <ul>
                     <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                    
                     <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
-                    
                     <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
-                    
                     <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
-                 
                     <li class="active"><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
                     <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
                 </ul>
@@ -44,7 +76,7 @@
 
             <section class="page-header">
                 <h2>Envio de Comunicados</h2>
-                <p>Crie e envie comunicados oficiais para médicos específicos ou para toda a base.</p>
+                <p>Crie e envie comunicados oficiais via WhatsApp com rastreamento de ciência.</p>
             </section>
             
             <section class="card-grid">
@@ -53,90 +85,115 @@
                     <h3>Criar Novo Comunicado</h3>
                     
                     <form id="comunicado-form">
-                        
                         <div class="form-group">
-                            <label for="comunicado-titulo">Título (Para Referência Interna):</label>
-                            <input type="text" id="comunicado-titulo" required placeholder="Ex: Novo Termo de LGPD" style="width: 100%;" />
+                            <label for="comunicado-titulo">Título Interno:</label>
+                            <input type="text" id="comunicado-titulo" required placeholder="Ex: Atualização de Protocolo COVID-24" style="width: 100%;" />
                         </div>
 
                         <div class="form-group-inline">
-                            
                             <div class="form-group" style="flex-basis: 30%;">
                                 <label for="publico-alvo">Público Alvo:</label>
                                 <select id="publico-alvo" required style="width: 100%;">
                                     <option value="">Selecione...</option>
-                                    <option value="TODOS_MEDICOS">Todos os Médicos Cadastrados</option> <option value="EMPRESA">Por Empresa (Médicos da Empresa)</option>
-                                    <option value="UNIDADE">Por Unidade (Médicos da Unidade)</option>
+                                    <option value="TODOS_MEDICOS">Todos os Médicos</option>
+                                    <option value="EMPRESA">Por Empresa</option>
+                                    <option value="UNIDADE">Por Unidade</option>
                                 </select>
                             </div>
                             
                             <div class="form-group" id="referencia-group" style="flex-basis: 70%; display: none;">
-                                <label for="referencia-select" id="referencia-label">Selecione:</label>
-                                <select id="referencia-select" disabled style="width: 100%;">
-                                    <option value="">Selecione o alvo (Empresa/Unidade)</option>
-                                </select>
+                                <label for="referencia-select" id="referencia-label">Selecione a Origem:</label>
+                                <select id="referencia-select" style="width: 100%;">
+                                    </select>
                                 <input type="hidden" id="referencia-type" value="">
                             </div>
                         </div>
 
-                        <div class="form-group checkbox-align-group" id="todos-medicos-confirm" style="display: none;">
-							<input type="checkbox" id="confirmar-todos">
-							<label for="confirmar-todos">Confirmo que desejo enviar para **TODOS** os médicos cadastrados.</label>
-						</div>
+                        <div class="form-group" id="todos-medicos-confirm" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 5px solid #ffc107;">
+                            <input type="checkbox" id="confirmar-todos">
+                            <label for="confirmar-todos" style="display: inline; margin-left: 10px;">
+                                <strong>Atenção:</strong> Confirmo que desejo enviar para TODA a base de médicos ativos.
+                            </label>
+                        </div>
                         
                         <div class="form-group">
-                            <label for="comunicado-conteudo">Conteúdo do Comunicado (Será enviado via WhatsApp):</label>
-                            <textarea id="comunicado-conteudo" rows="20" required 
-                                placeholder="Olá Dr(a) [NOME_MEDICO], A Health App tem um novo comunicado importante..." 
-                                style="width: 100%; resize: vertical;">
-                            </textarea>
-                            
+                            <label for="comunicado-conteudo">Mensagem (WhatsApp):</label>
+                            <p style="font-size: 0.8em; color: #666; margin-bottom: 5px;">Use <code>[NOME_MEDICO]</code> para personalizar e <code>[LINK_CIENTE]</code> para o botão de confirmação.</p>
+                            <textarea id="comunicado-conteudo" rows="10" required placeholder="Olá Dr(a) [NOME_MEDICO]..." style="width: 100%; resize: vertical;"></textarea>
+                        </div>
+
+                        <div id="progress-wrapper" class="progress-wrapper">
+                            <label id="progress-label">Enviando mensagens...</label>
+                            <div class="progress-container">
+                                <div id="progress-bar" class="progress-bar">0%</div>
+                            </div>
                         </div>
                         
                         <button type="submit" id="enviar-button" class="btn-primary">
-                            <i class="fas fa-paper-plane"></i> Enviar Comunicado e Iniciar Rastreamento
+                            <i class="fas fa-paper-plane"></i> Iniciar Disparos em Massa
                         </button>
                         
-                        <div id="status-message" class="alert" style="display: none;"></div>
+                        <div id="status-message" class="alert" style="display: none; margin-top: 15px;"></div>
                     </form>
                 </div>
                 
                 <div class="card full-width">
-                    <h3>Status dos Comunicados Enviados</h3>
-                    <div class="list-filters">
-                        <label for="filter-comunicado">Filtrar:</label>
-                        <select id="filter-comunicado" class="filter-input">
-                            <option value="">Todos os Comunicados</option>
-                            </select>
-                        <button id="search-status-button" class="btn-secondary small">Buscar Status</button>
-                    </div>
-                    
+                    <h3>Histórico e Status de Entrega</h3>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Título</th>
-                                    <th>Público Alvo</th>
-                                    <th>Total Enviado</th>
-                                    <th>Total Ciente</th>
+                                    <th>Público</th>
+                                    <th>Enviados</th>
+                                    <th>Ciências</th>
                                     <th>Taxa (%)</th>
-                                    <th>Data Envio</th>
+                                    <th>Data</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="comunicados-status-table-body">
-                                <tr><td colspan="7">Selecione um comunicado acima para ver o status.</td></tr>
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
 
             </section>
         </main>
-        
+    </div>
+
+    <div id="modal-detalhes" class="modal-overlay">
+        <div class="modal-content details-modal">
+            <div class="modal-header">
+                <h2 id="modal-titulo-comunicado">Detalhes do Envio</h2>
+                <button class="close-button" onclick="closeModalDetails()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Médico</th>
+                                <th>WhatsApp</th>
+                                <th>Envio</th>
+                                <th>Ciência</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalhes-comunicado-rows">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="js/dashboard-base.js"></script>
     <script src="js/comunicados.js"></script>
+    <script>
+        // Função simples para fechar o modal que adicionei acima
+        function closeModalDetails() {
+            document.getElementById('modal-detalhes').classList.remove('active');
+        }
+    </script>
 </body>
 </html>

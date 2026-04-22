@@ -12,7 +12,7 @@
         .form-content {
             display: flex;
             flex-direction: column;
-            gap: 20px; /* Espaço entre os fieldsets */
+            gap: 20px; 
         }
         fieldset {
             border: 1px solid #ccc;
@@ -29,34 +29,38 @@
             margin-left: -5px; 
         }
         
-        /* 💡 CORREÇÃO 1: Estrutura do Grid */
         .form-grid {
             display: grid;
-            /* Garante pelo menos 2 colunas de 300px em telas maiores */
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
             gap: 15px;
         }
         
-        /* 💡 CORREÇÃO 2: Faz o grupo de checkboxes e a textarea ocuparem a largura total */
         .form-group.full-width {
             grid-column: 1 / -1; 
         }
         
-        /* Otimiza o layout interno dos checkboxes */
         .checkbox-container-group {
             display: flex; 
             flex-wrap: wrap; 
-            gap: 15px 30px; /* Mais espaço horizontal entre os itens */
-            padding-top: 5px; /* Espaço para separar do label acima */
+            gap: 15px 30px;
+            padding-top: 5px;
         }
 
-        /* Garante que a textarea ocupe 100% do espaço da célula */
         .form-group.full-width textarea {
             width: 100%;
-            box-sizing: border-box; /* Inclui padding e border no width */
+            box-sizing: border-box;
+        }
+
+        .units-checkbox-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+            background: #fdfdfd;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px dashed #ccc;
         }
         
-        /* Estilo para desativar a seção de treinamento durante a EDIÇÃO (UX) */
         .fieldset-disabled {
             opacity: 0.6;
             pointer-events: none;
@@ -64,10 +68,7 @@
         .fieldset-disabled::after {
             content: "Treinamento só é alterado na tela de Agendamentos (Geral)";
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(255, 255, 255, 0.8);
             display: flex;
             align-items: center;
@@ -79,32 +80,45 @@
             text-align: center;
             padding: 20px;
         }
+
+        /* Estilo para alinhar a lupa ao campo CPF */
+        .search-group {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-search {
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-search:hover {
+            background-color: #333;
+        }
     </style>
 </head>
 <body>
-    
     <div class="app-shell">
-        
         <aside class="sidebar">
             <div class="logo-area">
                 <div class="logo-icon">⚕️</div>
                 <span>Health App</span>
             </div>
-             <nav class="main-nav">
+            <nav class="main-nav">
                 <ul>
                     <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                    
                     <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
-                    
                     <li class="active"><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
-                    
                     <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Agendamentos</a></li>
-                    
+                    <li><a href="https://alexconsulting.github.io/produtividade/" target="_blank" rel="noopener"><i class="fas fa-rocket"></i> Produtividade</a></li>
                 </ul>
             </nav>
             <div class="user-info">
                 <span id="welcome-message">Olá, Usuário</span>
-                <button id="logout-button" class="btn-secondary small"><i class="fas fa-sign-out-alt"></i> </button>
+                <button id="logout-button" class="btn-secondary small"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </aside>
 
@@ -116,7 +130,8 @@
             <section class="page-section">
                 <div class="card full-width">
                     <form id="medico-form" class="form-content">
-                        
+                        <input type="hidden" id="enviarParaAgendamento" name="enviarParaAgendamento" value="false">
+
                         <fieldset>
                             <legend>Dados Pessoais e Contato</legend>
                             <div class="form-grid">
@@ -129,29 +144,57 @@
                                     <input type="date" id="data_nasc" name="data_nasc">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cpf">CPF</label>
-                                    <input type="text" id="cpf" name="cpf" maxlength="14" placeholder="000.000.000-00">
+                                    <label for="cpf">CPF <span class="required">*</span></label>
+                                    <div class="search-group">
+                                        <input type="text" id="cpf" name="cpf" maxlength="14" placeholder="000.000.000-00" required>
+                                        <button type="button" id="btn-busca-cpf" class="btn-search">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="email">E-mail</label>
                                     <input type="email" id="email" name="email">
                                 </div>
                                 <div class="form-group">
-                                    <label for="telefone">Telefone</label>
+                                    <label for="telefone">Telefone (WhatsApp)</label>
                                     <input type="tel" id="telefone" name="telefone" maxlength="15" placeholder="(00) 00000-0000">
                                 </div>
                             </div>
                         </fieldset>
 
                         <fieldset>
+    <legend>Hospitais / Unidades de Atuação</legend>
+    <div class="form-group full-width">
+        <label>Selecione as Unidades onde o médico atende: <span class="required">*</span></label>
+        <div class="units-checkbox-list units-list-container">
+            <label class="checkbox-container">H.ARNALDO DE FIGUEIREDO
+                <input type="checkbox" class="unidade-checkbox" value="1">
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">H.GERAL DE GUARULHOS
+                <input type="checkbox" class="unidade-checkbox" value="2">
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">H.MBOI
+                <input type="checkbox" class="unidade-checkbox" value="3">
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">PLENA SAÚDE
+                <input type="checkbox" class="unidade-checkbox" value="4">
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">PREVENT
+                <input type="checkbox" class="unidade-checkbox" value="5">
+                <span class="checkmark"></span>
+            </label>
+        </div>
+    </div>
+</fieldset>
+
+                        <fieldset>
                             <legend>Informações Profissionais e Operacionais</legend>
                             <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="unidade_id">Unidade Principal <span class="required">*</span></label>
-                                    <select id="unidade_id" name="unidade_id" required>
-                                        <option value="">Selecione a Unidade</option>
-                                    </select>
-                                </div>
                                 <div class="form-group">
                                     <label for="crm">CRM <span class="required">*</span></label>
                                     <input type="text" id="crm" name="crm" required>
@@ -168,30 +211,55 @@
                                     <label for="empresa">Empresa Contratante</label>
                                     <input type="text" id="empresa" name="empresa">
                                 </div>
-                                
+
                                 <div class="form-group full-width">
-                                    <label>Áreas de Atuação (Selecione onde atende):</label>
+                                    <label><i class="fas fa-graduation-cap"></i> Treinamentos Obrigatórios (Possui atualizado?):</label>
+                                    <div class="checkbox-container-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                                            <label class="checkbox-container">PALS
+                                                <input type="checkbox" id="pals" name="pals">
+                                                <span class="checkmark"></span>
+                                            </label>
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span style="font-size: 0.85em; color: #666;">Data de Realização:</span>
+                                                <input type="date" id="data_pals" name="data_pals">
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                                            <label class="checkbox-container">ACLS
+                                                <input type="checkbox" id="acls" name="acls">
+                                                <span class="checkmark"></span>
+                                            </label>
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <span style="font-size: 0.85em; color: #666;">Data de Realização:</span>
+                                                <input type="date" id="data_acls" name="data_acls">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label>Integração e Ativação de Senha (Se aplicável):</label>
                                     <div class="checkbox-container-group">
-                                        <label class="checkbox-container">Porta
-                                            <input type="checkbox" id="porta" name="porta">
+                                        <label class="checkbox-container">Integração
+                                            <input type="checkbox" id="integracao" name="integracao">
                                             <span class="checkmark"></span>
                                         </label>
-                                        <label class="checkbox-container">Emergência
-                                            <input type="checkbox" id="emergencia" name="emergencia">
+                                        <label class="checkbox-container">Ativação de Senha
+                                            <input type="checkbox" id="ativacao_senha" name="ativacao_senha">
                                             <span class="checkmark"></span>
                                         </label>
-                                        <label class="checkbox-container">Enfermaria
-                                            <input type="checkbox" id="enfermaria" name="enfermaria">
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <label class="checkbox-container">Ambulatório
-                                            <input type="checkbox" id="ambulatorio" name="ambulatorio">
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <label class="checkbox-container">UTI
-                                            <input type="checkbox" id="uti" name="uti">
-                                            <span class="checkmark"></span>
-                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label>Áreas de Atuação (Onde atende):</label>
+                                    <div class="checkbox-container-group">
+                                        <label class="checkbox-container">Porta <input type="checkbox" id="porta"><span class="checkmark"></span></label>
+                                        <label class="checkbox-container">Emergência <input type="checkbox" id="emergencia"><span class="checkmark"></span></label>
+                                        <label class="checkbox-container">Enfermaria <input type="checkbox" id="enfermaria"><span class="checkmark"></span></label>
+                                        <label class="checkbox-container">Ambulatório <input type="checkbox" id="ambulatorio"><span class="checkmark"></span></label>
+                                        <label class="checkbox-container">UTI <input type="checkbox" id="uti"><span class="checkmark"></span></label>
                                     </div>
                                 </div>
 
@@ -202,7 +270,6 @@
                             </div>
                         </fieldset>
 
-                                                
                         <div class="form-actions">
                             <button type="submit" class="btn-primary" id="submit-button">
                                 <i class="fas fa-save"></i> Concluir Cadastro
@@ -212,11 +279,8 @@
                     </form>
                 </div>
             </section>
-
         </main>
-        
     </div>
-
     <script src="js/medicos-cadastro.js"></script>
 </body>
 </html>

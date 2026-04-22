@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Novo estilo para o botão do Meet */
+        .btn-meet {
+            background-color: #00796b;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-meet:hover {
+            background-color: #004d40;
+        }
+        .status-agendado { background-color: #e0f2f1; color: #00796b; border: 1px solid #00796b; }
+    </style>
 </head>
 <body>
     
@@ -22,7 +42,7 @@
                     <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
                     <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
                     <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
-                    <li class="active"><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Treinamentos</a></li>
+                    <li class="active"><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Integrações</a></li>
                     <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
                 </ul>
             </nav>
@@ -41,7 +61,7 @@
             <section class="list-container">
                 <div class="card">
                     <div class="card-header">
-                        <h2>Treinamentos Agendados</h2>
+                        <h2>Integrações Agendadas</h2>
                         <div class="actions">
                             </div>
                     </div>
@@ -51,7 +71,9 @@
                         <select id="filter-status" title="Filtrar por Status">
                             <option value="">Todos os Status</option>
                             <option value="PENDENTE">Pendente</option>
-                            <option value="CONVITE_ENVIADO">Convite Enviado</option> <option value="PRE_AGENDADO">Pré-Agendado</option> <option value="AGENDADO">Agendado</option>
+                            <option value="CONVITE_ENVIADO">Convite Enviado</option> 
+                            <option value="PRE_AGENDADO">Pré-Agendado</option> 
+                            <option value="AGENDADO">Agendado</option>
                             <option value="CONFIRMADO">Confirmado</option>
                             <option value="REALIZADO">Realizado</option>
                             <option value="CANCELADO">Cancelado</option>
@@ -73,7 +95,7 @@
                                 <tr style="background-color: #f8f9fa;">
                                     <th style="padding: 12px; text-align: left;">Data e Horário</th>
                                     <th style="padding: 12px; text-align: left;">Médico</th>
-                                    <th style="padding: 12px; text-align: left;">Telefone</th> 
+                                    <th style="padding: 12px; text-align: left;">Telefone</th> 
                                     <th style="padding: 12px; text-align: left;">Unidade</th>
                                     <th style="padding: 12px; text-align: left;">Detalhes (PALS/ACLS)</th>
                                     <th style="padding: 12px; text-align: left;">Status</th>
@@ -96,24 +118,26 @@
     <div id="agendamento-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-button">&times;</span>
-            <h3>Enviar Convite de Treinamento</h3> <p>Confirme os dados e clique em "Enviar Convite" para atualizar o status e abrir o WhatsApp.</p> <form id="individual-agendamento-form">
-                <input type="hidden" id="agendamento-id-modal"> 
-                 
+            <h3>Enviar Convite de Treinamento</h3> 
+            <p>Confirme os dados e clique em "Enviar Convite" para atualizar o status e abrir o WhatsApp.</p> 
+            <form id="individual-agendamento-form">
+                <input type="hidden" id="agendamento-id-modal"> 
+                 
                 <div class="form-group">
                     <label for="medico-nome-modal">Médico:</label>
                     <input type="text" id="medico-nome-modal" disabled>
                 </div>
-                 
+                 
                 <div class="form-group">
                     <label for="medico-telefone-modal">Telefone (WhatsApp):</label>
                     <input type="text" id="medico-telefone-modal" disabled> 
                 </div>
-                 
+                 
                 <div class="form-group">
                     <label for="unidade-nome-modal">Unidade de Vínculo:</label>
                     <input type="text" id="unidade-nome-modal" disabled>
                 </div>
-                 
+                 
                 <div class="form-group checkbox-group">
                     <label>Certificações Requeridas:</label>
                     <input type="checkbox" id="pals-modal" disabled> <label for="pals-modal">PALS</label>

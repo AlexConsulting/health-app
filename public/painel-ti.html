@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Atendimento TI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: #f0f2f5; }
+        
+        /* Sidebar */
+        #sidebar { width: 320px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background: #2c3e50; color: white; font-weight: bold; display: flex; justify-content: space-between; }
+        #lista-sessoes { flex: 1; overflow-y: auto; }
+        
+        .sessao-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; position: relative; }
+        .sessao-item:hover { background: #f8f9fa; }
+        .sessao-item.ativa { background: #e7f1ff; border-left: 5px solid #007bff; }
+        .status-dot { height: 10px; width: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        /* Área do Chat */
+        #chat-main { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; }
+        #chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; font-weight: bold; }
+        #mensagens-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        
+        /* Balões */
+        .msg { max-width: 70%; padding: 10px 15px; border-radius: 10px; font-size: 14px; position: relative; }
+        .msg-usuario { background: #fff; align-self: flex-start; border-bottom-left-radius: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .msg-ti { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .timestamp { font-size: 10px; color: #999; display: block; margin-top: 5px; text-align: right; }
+
+        /* Input Area */
+        .input-area { padding: 15px; background: #f0f0f0; display: flex; align-items: center; }
+        #msg-input { flex: 1; padding: 12px; border: none; border-radius: 25px; outline: none; margin-right: 10px; }
+        #btn-enviar { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #btn-enviar:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        <span><i class="fas fa-comments"></i> Atendimentos</span>
+        <small id="count">0</small>
+    </div>
+    <div id="lista-sessoes"></div>
+</div>
+
+<div id="chat-main">
+    <div id="chat-header">Selecione um usuário para iniciar</div>
+    <div id="mensagens-container"></div>
+    <div class="input-area">
+        <input type="text" id="msg-input" placeholder="Digite uma resposta..." disabled>
+        <button id="btn-enviar" disabled><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+    const socket = io({ path: '/socket.io-handler/' });
+    let sessaoSelecionada = null;
+
+    const listaSessoes = document.getElementById('lista-sessoes');
+    const msgContainer = document.getElementById('mensagens-container');
+    const inputMsg = document.getElementById('msg-input');
+    const btnEnviar = document.getElementById('btn-enviar');
+
+    // 1. CARREGAR SESSÕES INICIAIS (Protegido contra erro 500)
+    async function carregarSessoesIniciais() {
+        try {
+            const response = await fetch('/api/suporte/sessoes');
+            const sessoes = await response.json();
+            
+            // Verificação crucial: Se o servidor der erro 500, 'sessoes' pode não ser um Array
+            if (Array.isArray(sessoes)) {
+                document.getElementById('count').innerText = sessoes.length;
+                sessoes.forEach(s => adicionarSessaoLista(s.id, s.nome_usuario));
+            } else {
+                console.warn("O servidor não retornou uma lista de sessões.");
+            }
+        } catch (err) {
+            console.error("Erro ao carregar sessões:", err);
+        }
+    }
+
+    // 2. BUSCAR HISTÓRICO (Protegido contra erro 500)
+    async function carregarHistorico(sessaoId) {
+        try {
+            const res = await fetch(`/api/suporte/mensagens/${sessaoId}`);
+            const mensagens = await res.json();
+            
+            msgContainer.innerHTML = ''; 
+
+            if (Array.isArray(mensagens)) {
+                mensagens.forEach(msg => {
+                    exibirMensagem({
+                        remetente: msg.remetente,
+                        mensagem: msg.mensagem,
+                        data: msg.data_envio || msg.criado_em 
+                    });
+                });
+            } else {
+                console.warn("Histórico não disponível para esta sessão.");
+            }
+        } catch (err) {
+            console.error("Erro ao carregar histórico:", err);
+        }
+    }
+
+    // 3. SELECIONAR USUÁRIO
+    async function selecionarSessao(id, nome, elemento) {
+        sessaoSelecionada = id;
+        
+        document.querySelectorAll('.sessao-item').forEach(i => i.classList.remove('ativa'));
+        elemento.classList.add('ativa');
+        document.getElementById('chat-header').innerText = `Atendendo: ${nome}`;
+        inputMsg.disabled = false;
+        btnEnviar.disabled = false;
+        inputMsg.focus();
+
+        socket.emit('iniciar_sessao_ti', id);
+        await carregarHistorico(id);
+    }
+
+    // 4. MENSAGENS EM TEMPO REAL
+    socket.on('nova_mensagem', (data) => {
+        if (data.sessao_id == sessaoSelecionada) {
+            exibirMensagem(data);
+        }
+    });
+
+    function exibirMensagem(data) {
+        const div = document.createElement('div');
+        div.className = `msg ${data.remetente === 'ti' ? 'msg-ti' : 'msg-usuario'}`;
+        const hora = new Date(data.data || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        div.innerHTML = `
+            <strong>${data.remetente === 'ti' ? 'TI' : 'Usuário'}:</strong><br>
+            ${data.mensagem}
+            <span class="timestamp">${hora}</span>
+        `;
+        msgContainer.appendChild(div);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+
+    // 5. ENVIO
+    const enviar = () => {
+        const texto = inputMsg.value.trim();
+        if (texto && sessaoSelecionada) {
+            socket.emit('enviar_mensagem', {
+                sessao_id: sessaoSelecionada,
+                remetente: 'ti',
+                mensagem: texto
+            });
+            inputMsg.value = '';
+        }
+    };
+
+    btnEnviar.onclick = enviar;
+    inputMsg.onkeypress = (e) => { if(e.key === 'Enter') enviar(); };
+
+    // 6. NOVAS SESSÕES VIA SOCKET
+    socket.on('nova_sessao_disponivel', (data) => {
+        adicionarSessaoLista(data.id, data.nome);
+        const count = document.getElementById('count');
+        count.innerText = parseInt(count.innerText) + 1;
+    });
+
+    function adicionarSessaoLista(id, nome) {
+        if (document.getElementById(`sessao-${id}`)) return;
+        const div = document.createElement('div');
+        div.id = `sessao-${id}`;
+        div.className = 'sessao-item';
+        div.innerHTML = `<div class="status-dot"></div> <strong>${nome}</strong><br><small>Sessão #${id}</small>`;
+        div.onclick = () => selecionarSessao(id, nome, div);
+        listaSessoes.prepend(div);
+    }
+
+    carregarSessoesIniciais();
+</script>
+</body>
+</html>

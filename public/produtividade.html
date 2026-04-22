@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Produtividade</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    
+    <div class="app-shell">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="/medicos-lista.html"><i class="fas fa-list-alt"></i> Listagem Médicos</a></li>
+                    <li><a href="/medicos-cadastro.html"><i class="fas fa-user-md"></i> Cadastro Médico</a></li>
+                    <li><a href="/agendamentos.html"><i class="fas fa-calendar-alt"></i> Treinamentos</a></li>
+                    <li class="active"><a href="/produtividade.html"><i class="fas fa-chart-line"></i> Produtividade</a></li>
+                    <li><a href="/comunicados.html"><i class="fas fa-envelope-open-text"></i> Comunicados</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <button id="menu-toggle" class="menu-toggle"><i class="fas fa-bars"></i></button>
+                <div class="header-info">
+                    <span id="welcome-message"></span> 
+                    <span id="current-datetime"></span>
+                </div>
+                <button id="logout-button" class="btn btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </header>
+
+            <section class="page-section">
+                <h2>📊 Relatório de Produtividade do Médico</h2>
+                
+                <div class="filter-group">
+                    <label for="produtividade-periodo-inicio">Início:</label>
+                    <input type="date" id="produtividade-periodo-inicio" value="">
+                    
+                    <label for="produtividade-periodo-fim">Fim:</label>
+                    <input type="date" id="produtividade-periodo-fim" value="">
+                    
+                    <label for="produtividade-medico-select">Médico:</label>
+                    <select id="produtividade-medico-select">
+                        <option value="">Todos</option>
+                        </select>
+                    
+                    <button id="search-produtividade" class="btn btn-primary small">Buscar</button>
+                </div>
+
+                <div class="data-kpis-grid">
+                    <div class="kpi-card">Total de Agendamentos: <span id="kpi-total-agendamentos">0</span></div>
+                    <div class="kpi-card">Ativações Concluídas: <span id="kpi-ativacoes-concluidas">0</span></div>
+                    <div class="kpi-card">Taxa de Sucesso: <span id="kpi-taxa-sucesso">0%</span></div>
+                </div>
+
+                <h3>Produtividade Detalhada por Dia</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Agendamentos</th>
+                                <th>Ativações</th>
+                                <th>Convites Enviados</th>
+                                <th>Horas Trabalhadas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="produtividade-table-body">
+                            <tr><td colspan="5">Carregando dados...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/dashboard-base.js"></script>
+    <script src="js/produtividade.js"></script>
+</body>
+</html>

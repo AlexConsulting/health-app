@@ -8,63 +8,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
-        /* Estilos específicos para a página pública de seleção */
-        body {
-            background-color: #f4f7f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .public-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-        }
-        .header-icon {
-            font-size: 3rem;
-            color: #007bff; /* Cor primária */
-            margin-bottom: 20px;
-        }
-        .info-card {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .info-card p {
-            margin: 5px 0;
-            font-size: 0.95rem;
-        }
-        .info-card strong {
-            color: #495057;
-        }
-        .loading-state, .error-state, .success-state {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-        }
-        .error-state {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .success-state {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .btn-primary {
-            width: 100%;
-            padding: 10px;
-            font-size: 1.1rem;
-            margin-top: 15px;
-        }
+        /* Estilos originais preservados */
+        body { background-color: #f4f7f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .public-container { background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); padding: 30px; max-width: 500px; width: 100%; text-align: center; }
+        .header-icon { font-size: 3rem; color: #007bff; margin-bottom: 20px; }
+        .info-card { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-bottom: 20px; text-align: left; }
+        .info-card p { margin: 5px 0; font-size: 0.95rem; }
+        .info-card strong { color: #495057; }
+        .loading-state, .error-state, .success-state { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .error-state { background-color: #f8d7da; color: #721c24; }
+        .success-state { background-color: #d4edda; color: #155724; }
+        .btn-primary { width: 100%; padding: 10px; font-size: 1.1rem; margin-top: 15px; border: none; border-radius: 5px; background-color: #007bff; color: white; cursor: pointer; }
+        .btn-primary:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* Estilos adicionais para a grade de horários */
+        .grid-horarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .btn-horario { padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; transition: 0.2s; }
+        .btn-horario:hover { border-color: #007bff; background: #f0f7ff; }
+        .btn-horario.selecionado { background: #007bff; color: white; border-color: #0056b3; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -80,16 +41,21 @@
         </div>
 
         <form id="selecao-data-form" style="display: none;">
-            <p>Selecione abaixo a data de sua preferência para realizar a integração:</p>
+            <p>Selecione abaixo o dia de sua preferência:</p>
             
-            <div class="form-group">
-                <label for="data-selecionada">Data e Horário (Sempre às 15h):</label>
-                <select id="data-selecionada" required class="form-control">
-                    <option value="">Selecione uma data disponível</option>
+            <div class="form-group" style="text-align: left;">
+                <label for="data-selecionada">Data disponível (Seg, Qua e Sex):</label>
+                <select id="data-selecionada" required class="form-control" style="width: 100%; padding: 8px; margin-top: 5px;">
+                    <option value="">Selecione uma data...</option>
                 </select>
             </div>
+
+            <div id="area-horarios" style="display: none; margin-top: 20px; text-align: left;">
+                <label>Escolha o horário (13h às 17h):</label>
+                <div id="lista-horarios" class="grid-horarios"></div>
+            </div>
             
-            <button type="submit" id="submit-button" class="btn btn-primary">
+            <button type="submit" id="submit-button" class="btn btn-primary" disabled>
                 <i class="fas fa-calendar-alt"></i> Confirmar Seleção
             </button>
         </form>

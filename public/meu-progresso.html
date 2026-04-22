@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health App - Meu Progresso</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* === ESTILOS DE PROGRESSO E GAMIFICAÇÃO === */
+        .progress-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        /* Card de Perfil do Aluno */
+        .profile-summary {
+            text-align: center;
+            padding: 30px !important;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 15px;
+            border: 4px solid #007bff;
+        }
+
+        /* Sistema de Badges */
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .badge-item {
+            text-align: center;
+            opacity: 0.4;
+            filter: grayscale(1);
+            transition: 0.3s;
+        }
+
+        .badge-item.unlocked {
+            opacity: 1;
+            filter: grayscale(0);
+        }
+
+        .badge-item i {
+            font-size: 2rem;
+            color: #ffc107;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .badge-item span { font-size: 11px; font-weight: bold; }
+
+        /* Timeline de Conclusão */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin-top: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #dee2e6;
+        }
+
+        .timeline-event {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .timeline-event::after {
+            content: '';
+            position: absolute;
+            left: -27px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #007bff;
+            border: 2px solid #fff;
+        }
+
+        .course-progress-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .course-name { flex: 1; font-weight: 500; }
+        .course-percent { width: 50px; text-align: right; font-weight: bold; color: #007bff; }
+
+        @media (max-width: 900px) {
+            .progress-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">⚕️</div>
+                <span>Health App</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="/treinamentos.html"><i class="fas fa-graduation-cap"></i> Treinamentos</a></li>
+                    <li class="active"><a href="/meu-progresso.html"><i class="fas fa-chart-pie"></i> Meu Progresso</a></li>
+                    <li><a href="/relatorios.html"><i class="fas fa-chart-line"></i> Relatórios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="user-info">
+                    <span><i class="fas fa-user-graduate"></i> Central de Carreira</span>
+                </div>
+            </header>
+
+            <div class="progress-container">
+                
+                <div class="left-col">
+                    <div class="card profile-summary">
+                        <div class="profile-avatar">👨‍⚕️</div>
+                        <h3>Dr. Alex Consulting</h3>
+                        <p>Nível 4 - Especialista</p>
+                        <div class="progress-bar" style="height: 12px;"><div class="progress-fill" style="width: 75%;"></div></div>
+                        <small>750 / 1000 XP para o próximo nível</small>
+                    </div>
+
+                    <div class="card">
+                        <h3><i class="fas fa-medal"></i> Minhas Conquistas</h3>
+                        <div class="badge-grid">
+                            <div class="badge-item unlocked">
+                                <i class="fas fa-rocket"></i><span>Primeiros Passos</span>
+                            </div>
+                            <div class="badge-item unlocked">
+                                <i class="fas fa-shield-alt"></i><span>Expert LGPD</span>
+                            </div>
+                            <div class="badge-item">
+                                <i class="fas fa-fire"></i><span>7 Dias Seguidos</span>
+                            </div>
+                            <div class="badge-item">
+                                <i class="fas fa-crown"></i><span>Top Aluno</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <div class="card">
+                        <h3><i class="fas fa-tasks"></i> Progresso nos Cursos Atuais</h3>
+                        
+                        <div class="course-progress-row">
+                            <span class="course-name">Protocolos de Atendimento</span>
+                            <div class="progress-bar" style="flex: 2; height: 10px;"><div class="progress-fill" style="width: 85%;"></div></div>
+                            <span class="course-percent">85%</span>
+                        </div>
+
+                        <div class="course-progress-row">
+                            <span class="course-name">Sistemas de Prontuário</span>
+                            <div class="progress-bar" style="flex: 2; height: 10px;"><div class="progress-fill" style="width: 30%; background: #ffc107;"></div></div>
+                            <span class="course-percent">30%</span>
+                        </div>
+
+                        <div class="course-progress-row">
+                            <span class="course-name">Segurança do Trabalho</span>
+                            <div class="progress-bar" style="flex: 2; height: 10px;"><div class="progress-fill" style="width: 100%; background: #28a745;"></div></div>
+                            <span class="course-percent">100%</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3><i class="fas fa-stream"></i> Timeline de Aprendizado</h3>
+                        <div class="timeline">
+                            <div class="timeline-event">
+                                <strong>Concluiu "Integração Institucional"</strong>
+                                <p><small>Há 2 dias • Carga horária: 2h</small></p>
+                            </div>
+                            <div class="timeline-event">
+                                <strong>Iniciou "Protocolos de Atendimento"</strong>
+                                <p><small>Há 5 dias • 12 aulas restantes</small></p>
+                            </div>
+                            <div class="timeline-event">
+                                <strong>Ganhou Badge "Expert LGPD"</strong>
+                                <p><small>Há 10 dias • Pontuação: 9.5</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</body>
+</html>

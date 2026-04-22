@@ -9,70 +9,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* ESTILOS ESSENCIAIS PARA GARANTIR ALINHAMENTO E TAMANHO COMPACTO DO FILTRO DE UNIDADE */
-
-        /* 1. Container Principal (Alinhamento Filtro vs. Botão Novo Cadastro) */
-        .list-actions {
-            display: flex;
-            justify-content: space-between; /* Alinha o filtro à esquerda e o botão à direita */
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 15px;
-            flex-wrap: wrap; 
-        }
-
-        /* 2. Grupo de Filtros (Agora, apenas o Select) */
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0; 
-        }
-
-        /* 3. Controle de Tamanho do Campo Select (Compacto e não estica) */
-        .filter-group #filter-unidade {
-            /* Tamanho fixo para garantir que não fique gigante. */
-            width: 200px; 
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            flex-shrink: 0; 
-        }
-
-        /* 4. Tabela (Ajuste para 6 Colunas: Nome, CRM, Telefone, Especialidade, Unidade, Ações) */
-        .data-table th, .data-table td {
-            padding: 12px; 
-            border-bottom: 1px solid #eee;
-        }
-
-        /* Alinhamento dos Dados (esquerda para texto) */
-        .data-table thead th, .data-table tbody td {
-            text-align: left;
-        }
+        .list-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; }
+        .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .input-search { width: 280px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
+        .filter-group #filter-unidade { width: 200px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
+        .data-table th, .data-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
         
-        /* Ajuste de largura das 6 colunas */
-        .data-table thead th:nth-child(1) { width: 25%; } /* Nome */
-        .data-table thead th:nth-child(2) { width: 10%; } /* CRM */
-        .data-table thead th:nth-child(3) { width: 15%; } /* Telefone */
-        .data-table thead th:nth-child(4) { width: 20%; } /* Especialidade */
-        .data-table thead th:nth-child(5) { width: 20%; } /* Unidade */
-        
-        /* Centraliza a última coluna (Ações) */
-        .data-table thead th:last-child, .data-table tbody td:last-child {
-             text-align: center;
-             width: 10%;
-        }
+        /* Botão Limpar */
+        .btn-clear { padding: 8px 15px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; color: #666; font-size: 14px; }
+        .btn-clear:hover { background-color: #e2e6ea; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 600px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; right: 20px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
+        .close-modal:hover { color: #000; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .modal-grid div b { display: block; color: #555; margin-bottom: 3px; font-size: 0.85rem; text-transform: uppercase; }
+        .modal-grid div { padding: 10px; background: #f9f9f9; border-radius: 4px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
-    
     <div class="app-shell">
-        
         <aside class="sidebar">
-            <div class="logo-area">
-                <div class="logo-icon">⚕️</div>
-                <span>Health App</span>
-            </div>
+            <div class="logo-area"><div class="logo-icon">⚕️</div><span>Health App</span></div>
             <nav class="main-nav">
                 <ul>
                     <li><a href="/dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
@@ -89,7 +49,6 @@
             <header class="top-bar">
                 <div class="user-info">
                     <span id="welcome-message">Olá, [Nome do Usuário]</span>
-                    <span class="current-datetime" id="current-datetime"></span>
                 </div>
                 <button id="logout-button" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</button>
             </header>
@@ -97,27 +56,22 @@
             <section class="list-container">
                 <div class="card full-width">
                     <h2>📋 Médicos Cadastrados</h2>
-                    <p class="subtitle">Lista completa de profissionais ativos no sistema e ferramentas de gestão.</p>
-                    
                     <div class="list-actions">
-                        
                         <div class="filter-group">
-                            
+                            <input type="text" id="filter-busca" class="input-search" placeholder="Buscar por Nome, CRM ou CPF...">
                             <select id="filter-unidade" class="input-filter">
                                 <option value="">Todas as Unidades</option>
-                                </select>
-                            
-                            </div>
-                        
-                        <a href="/medicos-cadastro.html" class="btn-secondary small">
-                            <i class="fas fa-plus"></i> Novo Cadastro
-                        </a>
+                            </select>
+                            <button id="btn-limpar" class="btn-clear"><i class="fas fa-broom"></i> Limpar</button>
+                        </div>
+                        <a href="/medicos-cadastro.html" class="btn-secondary small"><i class="fas fa-plus"></i> Novo Cadastro</a>
                     </div>
                     
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 50px;">Info</th>
                                     <th>Nome</th>
                                     <th>CRM</th>
                                     <th>Telefone</th> 
@@ -127,19 +81,22 @@
                                 </tr>
                             </thead>
                             <tbody id="medicos-table-body">
-                                <tr><td colspan="6" class="placeholder-text">Carregando dados dos médicos...</td></tr>
+                                <tr><td colspan="7" class="placeholder-text">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
-
-                    <div id="pagination-controls" class="pagination-controls">
-                    </div>
-
                 </div>
             </section>
-
         </main>
-        
+    </div>
+
+    <div id="modal-detalhes" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3><i class="fas fa-address-card"></i> Detalhes do Profissional</h3>
+            <hr>
+            <div id="detalhes-conteudo" class="modal-grid"></div>
+        </div>
     </div>
 
     <script src="js/medicos-lista.js"></script>
