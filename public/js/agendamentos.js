@@ -17,7 +17,7 @@ const individualForm = document.getElementById('individual-agendamento-form');
 
 
 // ------------------------------------------------------------------
-// 💡 NOVO: Função para gerar o corpo da mensagem de convite no WhatsApp
+// 💡 CORRIGIDO: Função para gerar o corpo da mensagem de convite no WhatsApp
 // ------------------------------------------------------------------
 /**
  * Gera a mensagem padronizada do WhatsApp com o link de seleção.
@@ -29,23 +29,15 @@ function generateInvitationMessage(medicoNome, agendamentoId) {
     // O link deve apontar para a nova página de seleção pública
     const selectionLink = `${window.location.origin}/selecionar-data.html?id=${agendamentoId}`;
     
-    // Datas disponíveis fixas (conforme padrão de comunicação)
-    const fixedDates = 
-        `\u{1F4C5} Dezembro/2025\n` + // 📅
-        `01, 03, 05, 08, 10, 12, 15, 17, 19, 22\n\n` +
-        `\u{1F4C5} Janeiro/2026\n` +
-        `08, 09, 12, 15, 16, 19, 22, 23, 26, 29, 30`;
-
     // Uso de template literals com \n\n para espaçamento entre parágrafos.
     const rawMessage = 
         `Olá, Dr. ${medicoNome},\n\n` +
         `Tudo bem?\n\n` +
-        `Meu nome é Jhulia, sou do setor de Qualidade da Performa Saúde. Primeiramente, seja muito bem-vindo ao time Performa Saúde! \u{1F60A}\n\n` + // 😊
+        `Somos do setor de Qualidade da Performa Saúde. Primeiramente, seja muito bem-vindo ao time Performa Saúde! \u{1F60A}\n\n` + 
         `O motivo do meu contato é para agendarmos a sua integração on-line, um passo essencial para o início da sua agenda no Plena Saúde. Durante essa integração, serão apresentados todos os protocolos e rotinas internas da unidade e da Performa Saúde.\n\n` +
-        `Essa reunião precisa ser realizada antes do seu primeiro plantão, preferencialmente com a maior antecedência possível, para que possamos testar o sistema e corrigir qualquer pendência de cadastro, caso necessário. As integrações são realizadas às segundas, quartas e sextas-feiras, sempre às 15h, diretamente com a Coordenadora de Qualidade, Hedine Costa.\n\n` +
-        `Temos as seguintes datas disponíveis:\n` +
-        `${fixedDates}\n\n` +
-        `*Escolha sua data e confirme sua disponibilidade clicando aqui:* \n${selectionLink}\n\n` + 
+        `Essa reunião precisa ser realizada antes do seu primeiro plantão, preferencialmente com a maior antecedência possível, para que possamos testar o sistema e corrigir qualquer pendência de cadastro, caso necessário.\n\n` +
+        `As integrações são realizadas sempre às *segundas, quartas e sextas-feiras*, das 13h às 17h, diretamente com a Coordenadora de Qualidade, Hedine Costa.\n\n` +
+        `*Escolha sua data e confirme sua disponibilidade clicando no link abaixo:* \n${selectionLink}\n\n` + 
         `Aguardamos sua confirmação.\n\n` +
         `Atenciosamente,\n` +
         `Equipe de Qualidade\n` +
@@ -54,6 +46,13 @@ function generateInvitationMessage(medicoNome, agendamentoId) {
     return encodeURIComponent(rawMessage);
 }
 // ------------------------------------------------------------------
+
+// 💡 FUNÇÃO ADICIONADA PARA O MEET
+function generateMeetMessage(medicoNome, data, hora) {
+    const meetLink = "https://meet.google.com/xxx-xxxx-xxx"; 
+    const rawMessage = `Olá, Dr. ${medicoNome}!\n\nConfirmamos sua integração para o dia *${data}* às *${hora}*.\n\nSegue o link da reunião (Google Meet):\n${meetLink}\n\nAtenciosamente, Equipe Performa Saúde.`;
+    return encodeURIComponent(rawMessage);
+}
 
 
 /**
@@ -115,13 +114,12 @@ function getToken() {
 
     if (!token || !userName) {
         // Alerta e redireciona para login se a sessão for inválida
-        // NOTA: Em um ambiente produtivo, o "alert" deve ser substituído por um modal/toast.
-        // Como estou no ambiente Canvas, mantenho o alert.
         alert('Sessão inválida ou expirada. Faça o login novamente.');
         window.location.href = '/login.html';
         return null;
     }
-    document.getElementById('welcome-message').textContent = `Olá, ${userName}`;
+    const welcomeMsg = document.getElementById('welcome-message');
+    if (welcomeMsg) welcomeMsg.textContent = `Olá, ${userName}`;
     return token;
 }
 
@@ -159,9 +157,10 @@ function showMessage(message, type = 'success') {
  */
 function formatDate(isoString) {
     if (!isoString) return 'N/A';
+    // 💡 AJUSTE DE FUSO: Forçamos UTC para evitar que 00:00:00 recue um dia no Brasil
     const date = new Date(isoString);
     if (isNaN(date)) return 'N/A'; 
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
 /**
@@ -172,10 +171,8 @@ function formatDate(isoString) {
 function formatStatus(status) {
     switch (status) {
         case 'PENDENTE': return '<span class="status-badge status-pending">Pendente</span>';
-        // 💡 NOVOS STATUS
         case 'CONVITE_ENVIADO': return '<span class="status-badge status-sent">Convite Enviado</span>';
         case 'PRE_AGENDADO': return '<span class="status-badge status-pre-scheduled">Pré-Agendado</span>';
-        
         case 'AGENDADO': return '<span class="status-badge status-scheduled">Agendado</span>';
         case 'CONFIRMADO': return '<span class="status-badge status-confirmed">Confirmado</span>';
         case 'REALIZADO': return '<span class="status-badge status-completed">Realizado</span>';
@@ -185,7 +182,7 @@ function formatStatus(status) {
 }
 
 // ------------------------------------------------------------------
-// 💡 FUNÇÃO ATUALIZADA: Confirmação Final de Agendamento (PRE_AGENDADO -> AGENDADO)
+// 💡 FUNÇÃO ATUALIZADA: Confirmação Final de Agendamento (AGORA INFORMATIVA)
 // ------------------------------------------------------------------
 /**
  * Atualiza o status do agendamento de PRE_AGENDADO para AGENDADO (Confirmação Final).
@@ -215,17 +212,14 @@ async function confirmarAgendamentoFinal(id, token, medicoNome, medicoTelefone, 
         const result = await response.json();
 
         if (response.ok) {
-            // 1. Obtém o link de confirmação do AGENDAMENTO (que o backend gera)
-            const confirmationLink = result.confirmationLink;
             const telefoneLimpo = medicoTelefone.replace(/[\s-()]/g, '');
             
-            // 2. Monta a mensagem final para o WhatsApp (AGENDADO)
-            const whatsappMessage = `Olá, Dr(a) ${medicoNome}!\n\nSeu treinamento foi *AGENDADO* para o dia ${dataFinal} às ${horarioFinal}h.\n\nPor favor, confirme a presença neste link: ${confirmationLink}`;
+            const whatsappMessage = `Olá, Dr(a) ${medicoNome}!\n\nSeu treinamento foi *CONFIRMADO* com sucesso para o dia ${dataFinal} às ${horarioFinal}h.\n\nNão é necessário realizar nenhuma ação adicional. Ficamos à disposição!\n\nAtenciosamente,\nEquipe de Qualidade - Performa Saúde`;
+            
             const whatsappUrl = `https://wa.me/55${telefoneLimpo}?text=${encodeURIComponent(whatsappMessage)}`;
             
-            // 3. Abre o WhatsApp e recarrega a lista
             window.open(whatsappUrl, '_blank');
-            showMessage(`Agendamento finalizado para ${dataFinal} às ${horarioFinal}. WhatsApp aberto para o envio do link de confirmação final.`, 'success');
+            showMessage(`Agendamento finalizado para ${dataFinal} às ${horarioFinal}. Comprovante enviado via WhatsApp.`, 'success');
             loadAgendamentos(); 
         } else {
             showMessage(result.erro || 'Erro ao confirmar agendamento final.', 'error');
@@ -303,7 +297,6 @@ async function loadAgendamentos() {
         } else if (response.status === 401) {
             getToken(); // Tenta renovar ou redirecionar
         } else {
-            // Se for erro 500, o backend precisa ser inspecionado.
             console.error(`Erro ${response.status} ao carregar agendamentos. Endpoint: ${endpoint}`, result.erro);
             showMessage(result.erro || 'Erro ao carregar agendamentos. Verifique o console para detalhes.', 'error');
             renderAgendamentosTable([]); // Limpa a tabela em caso de erro
@@ -322,7 +315,6 @@ function renderAgendamentosTable(agendamentos) {
     agendamentosTableBody.innerHTML = ''; 
 
     if (agendamentos.length === 0) {
-        // Colspan ajustado para 7 (Data/Hora, Médico, Telefone, Unidade, Detalhes, Status, Ações)
         agendamentosTableBody.innerHTML = `<tr><td colspan="7" class="placeholder-text" style="text-align: center; padding: 20px;">Nenhum treinamento encontrado com os filtros aplicados.</td></tr>`;
         return;
     }
@@ -332,9 +324,11 @@ function renderAgendamentosTable(agendamentos) {
         
         // Determina a exibição dos botões
         const isPendente = agendamento.status === 'PENDENTE';
-        const isConviteEnviado = agendamento.status === 'CONVITE_ENVIADO'; // Novo status
-        const isPreAgendado = agendamento.status === 'PRE_AGENDADO'; // Novo status
+        const isConviteEnviado = agendamento.status === 'CONVITE_ENVIADO'; 
+        const isPreAgendado = agendamento.status === 'PRE_AGENDADO'; 
+        // 💡 AJUSTE DE LÓGICA: Garantindo que status AGENDADO também mostre o botão de Realizado
         const isAgendadoOuConfirmado = agendamento.status === 'AGENDADO' || agendamento.status === 'CONFIRMADO';
+        // 💡 AJUSTE DE LÓGICA: Garantindo que o botão Cancelar apareça para quem está AGENDADO
         const isCancelavel = agendamento.status !== 'CANCELADO' && agendamento.status !== 'REALIZADO';
         
         // Data e Horário: prioriza data_preferencial se PRE_AGENDADO, senão usa a data_integracao
@@ -350,7 +344,6 @@ function renderAgendamentosTable(agendamentos) {
             <td>${formatStatus(agendamento.status)}</td>
             <td>
                 ${isPendente ? 
-                    // 💡 BOTÃO NOVO: Enviar Convite (abre modal)
                     `<button class="btn-icon btn-schedule-individual" title="Enviar Convite (WhatsApp)" 
                         data-id="${agendamento.id}"
                         data-medico-nome="${agendamento.medico_nome}"
@@ -362,13 +355,14 @@ function renderAgendamentosTable(agendamentos) {
                     </button>` : ''}
 
                 ${isConviteEnviado ?
-                    // Ação de copiar link (usando a função de utilitário - precisa ser adicionada)
                     `<button class="btn-icon btn-copy-link" title="Copiar Link de Convite" onclick="copyConviteLink('${agendamento.id}')">
                         <i class="fas fa-copy"></i> 
+                    </button>
+                    <button class="btn-icon btn-view-public" title="Simular Link do Médico" onclick="window.open('/selecionar-data.html?id=${agendamento.id}', '_blank')">
+                        <i class="fas fa-eye" style="color: #007bff;"></i>
                     </button>` : ''}
 
                 ${isPreAgendado ?
-                    // 💡 BOTÃO NOVO: Confirmar Agendamento Final (com os dados para o listener)
                     `<button class="btn-icon btn-confirm-final" title="Confirmar Agendamento Final" 
                         data-id="${agendamento.id}"
                         data-medico-nome="${agendamento.medico_nome}" 
@@ -379,13 +373,18 @@ function renderAgendamentosTable(agendamentos) {
                     </button>` : ''}
 
                 ${isAgendadoOuConfirmado ? 
-                    // Botão Marcar como Realizado (Existente)
-                    `<button class="btn-icon btn-realizar" title="Marcar como Realizado" data-id="${agendamento.id}" data-status="REALIZADO">
+                    `<button class="btn-icon btn-send-meet" title="Enviar Link do Meet" 
+                        data-medico-nome="${agendamento.medico_nome}" 
+                        data-medico-telefone="${agendamento.medico_telefone || ''}"
+                        data-data="${displayDate}" 
+                        data-hora="${displayTime}">
+                        <i class="fas fa-video" style="color: #28a745;"></i>
+                    </button>
+                    <button class="btn-icon btn-realizar" title="Marcar como Realizado" data-id="${agendamento.id}" data-status="REALIZADO">
                         <i class="fas fa-check-circle"></i>
                     </button>` : ''}
                     
                 ${isCancelavel ? 
-                    // Botão Cancelar Treinamento (Existente)
                     `<button class="btn-icon btn-cancel" title="Cancelar Treinamento" data-id="${agendamento.id}" data-status="CANCELADO">
                         <i class="fas fa-times"></i>
                     </button>` : ''}
@@ -406,12 +405,8 @@ function renderAgendamentosTable(agendamentos) {
  * @param {string} agendamentoId - ID do agendamento.
  */
 function copyConviteLink(agendamentoId) {
-    // O link do convite deve ser para a página selecionar-data.html
     const conviteLink = `${window.location.origin}/selecionar-data.html?id=${agendamentoId}`;
     
-    // O uso de navigator.clipboard.writeText pode falhar em iframes ou em HTTP.
-    // Usamos document.execCommand('copy') como fallback principal conforme boas práticas no Canvas.
-
     const tempInput = document.createElement('input');
     tempInput.value = conviteLink;
     document.body.appendChild(tempInput);
@@ -435,6 +430,16 @@ function addEventListenersToActions() {
     const token = getToken();
     if (!token) return;
 
+    // 💡 LISTENER DO MEET
+    document.querySelectorAll('.btn-send-meet').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const d = e.currentTarget.dataset;
+            const tel = d.medicoTelefone.replace(/[\s-()]/g, '');
+            const msg = generateMeetMessage(d.medicoNome, d.data, d.hora);
+            window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
+        });
+    });
+
     // Listener para o botão de Enviar Convite (Abre o Modal)
     document.querySelectorAll('.btn-schedule-individual').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -450,11 +455,10 @@ function addEventListenersToActions() {
         });
     });
     
-    // 💡 NOVO: Listener para o botão de Confirmação Final (PRE_AGENDADO -> AGENDADO)
+    // Listener para o botão de Confirmação Final (PRE_AGENDADO -> AGENDADO)
     document.querySelectorAll('.btn-confirm-final').forEach(button => {
         button.addEventListener('click', async (e) => {
             const id = e.currentTarget.dataset.id;
-            // Extrai os dados necessários para montar a mensagem do WhatsApp (etapa 1)
             const medicoNome = e.currentTarget.dataset.medicoNome;
             const medicoTelefone = e.currentTarget.dataset.medicoTelefone;
             const dataFinal = e.currentTarget.dataset.dataFinal;
@@ -509,7 +513,7 @@ async function updateAgendamentoStatus(id, status, token) {
 }
 
 
-// NOVO: Submit do Formulário Individual (ENVIA CONVITE)
+// Submit do Formulário Individual (ENVIA CONVITE)
 if (individualForm) {
     individualForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -532,7 +536,7 @@ if (individualForm) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ status: 'CONVITE_ENVIADO' }) // 💡 NOVO STATUS
+                body: JSON.stringify({ status: 'CONVITE_ENVIADO' }) 
             });
 
             const result = await response.json();
@@ -542,12 +546,9 @@ if (individualForm) {
                 
                 // 2. Lógica para Geração e Abertura do link do WhatsApp
                 const telefoneLimpo = medicoTelefone.replace(/[\s-()]/g, ''); 
-                
-                // Constrói e codifica a mensagem de convite
                 const mensagem = generateInvitationMessage(medicoNome, agendamento_id);
 
-                // Abre o link do WhatsApp
-                window.open(`https://wa.me/55${telefoneLimpo}?text=${mensagem}`, '_blank'); // Adicionado o 55
+                window.open(`https://wa.me/55${telefoneLimpo}?text=${mensagem}`, '_blank');
                 
                 // Fecha o modal e recarrega a lista
                 agendamentoModal.style.display = 'none';
@@ -570,7 +571,6 @@ if (individualForm) {
 // --- Inicialização e Event Listeners ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Adicionado verificação de token logo na inicialização para proteger a página
     const token = getToken(); 
     if (token) {
         loadUnitsForFilter();
@@ -588,8 +588,6 @@ if (logoutButton) {
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userName');
-        // NOTA: Em um ambiente produtivo, o "alert" deve ser substituído por um modal/toast.
-        // Como estou no ambiente Canvas, mantenho o alert.
         alert('Sessão encerrada com sucesso.');
         window.location.href = '/login.html';
     });

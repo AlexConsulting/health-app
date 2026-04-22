@@ -1,38 +1,75 @@
 // public/js/medicos-cadastro.js
 
+// --- Definição de Variáveis Globais ---
 const medicoForm = document.getElementById('medico-form');
-const unidadeSelect = document.getElementById('unidade_id');
+const unidadesContainer = document.getElementById('unidades-checkbox-container'); 
 const messageArea = document.getElementById('message-area');
 const submitButton = document.getElementById('submit-button');
+const cpfInput = document.getElementById('cpf');
+const btnBuscaCpf = document.getElementById('btn-busca-cpf'); 
+const telInput = document.getElementById('telefone'); 
 
-// Elementos da seção de Agendamento (Mantidos)
+// Elementos da seção de Agendamento
 const trainingTitle = document.getElementById('training-title');
 const trainingFields = document.getElementById('training-fields');
 
-
 // Variável para armazenar o ID do médico em edição
 let editingMedicoId = null; 
+let initialHospitaisIds = []; // Armazena os hospitais que o médico já tinha para detectar novos
 
+// --- SEÇÃO DE PADRONIZAÇÃO E MÁSCARAS ---
 
-// --- Funções de Utilitário (Mantidas) ---
+// 1. Forçar Maiúsculas em todos os inputs de texto e textareas
+document.addEventListener('input', (e) => {
+    if ((e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'email')) || e.target.tagName === 'TEXTAREA') {
+        if (e.target.id !== 'cpf' && e.target.id !== 'telefone') {
+            e.target.value = e.target.value.toUpperCase();
+        }
+    }
+});
+
+// 2. Máscara de CPF (000.000.000-00)
+cpfInput.addEventListener('input', (e) => {
+    let value = e.target.value.replace(/\D/g, ''); 
+    if (value.length > 11) value = value.slice(0, 11);
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    e.target.value = value;
+});
+
+// 3. Máscara de Telefone ((00) 00000-0000)
+telInput.addEventListener('input', (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+    value = value.replace(/(\d{5})(\d)/, '$1-$2');
+    e.target.value = value;
+});
+
+// --- Funções de Utilitário ---
 
 function getToken() {
     const token = localStorage.getItem('userToken');
     const userName = localStorage.getItem('userName');
 
     if (!token || !userName) {
+        console.error("ERRO: Token ou Nome de usuário não encontrados no localStorage.");
         alert('Sessão inválida ou expirada. Faça o login novamente.');
         window.location.href = '/login.html';
         return null;
     }
-    document.getElementById('welcome-message').textContent = `Olá, ${userName}`;
+    const welcomeMsg = document.getElementById('welcome-message');
+    if (welcomeMsg) welcomeMsg.textContent = `Olá, ${userName}`;
     return token;
 }
 
 function showMessage(message, type = 'success') {
-    // Esta função atua como seu "modal" ou área de notificação
+    if (!messageArea) return;
     messageArea.textContent = message;
     messageArea.className = `message-area message-${type}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     setTimeout(() => {
         messageArea.textContent = '';
         messageArea.className = 'message-area';
@@ -44,10 +81,11 @@ function getMedicoIdFromUrl() {
     return params.get('id');
 }
 
-// --- 1. Carregar Unidades (Mantida) ---
+// --- 1. Carregar Unidades (Checkboxes) ---
 
-async function loadUnits(token, selectedUnitId = null) {
-    unidadeSelect.innerHTML = '<option value="" disabled selected>Carregando unidades...</option>';
+async function loadUnits(token, selectedIds = []) {
+    const container = document.querySelector('.units-list-container');
+    if (!container) return;
     
     try {
         const response = await fetch('/api/unidades', {
@@ -58,46 +96,83 @@ async function loadUnits(token, selectedUnitId = null) {
             }
         });
 
-        if (response.status === 401) { return getToken(); }
+        if (response.status === 401) return getToken(); 
 
         const data = await response.json();
+        const unidades = Array.isArray(data) ? data : (data.unidades || []);
 
-        unidadeSelect.innerHTML = ''; // Limpa o placeholder
+        container.innerHTML = ''; 
 
-        if (data.unidades && data.unidades.length > 0) {
-            const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = "Selecione uma Unidade";
-            defaultOption.disabled = true;
-            if (!selectedUnitId) { 
-                defaultOption.selected = true;
-            }
-            unidadeSelect.appendChild(defaultOption);
-            
-            data.unidades.forEach(unit => {
-                const option = document.createElement('option');
-                option.value = unit.id; 
-                option.textContent = unit.nome;
-                if (selectedUnitId && unit.id.toString() === selectedUnitId.toString()) {
-                    option.selected = true;
-                }
-                unidadeSelect.appendChild(option);
+        if (unidades.length > 0) {
+            unidades.forEach(unit => {
+                const isChecked = selectedIds.some(id => String(id) === String(unit.id));
+                
+                const nomeExibicao = unit.nome.toUpperCase()
+                    .replace(/^HOSPITAL\s+/i, 'H. ')
+                    .replace(/^H\s+/i, 'H. ');
+
+                const label = document.createElement('label');
+                label.className = 'checkbox-container';
+                label.innerHTML = `
+                    <input type="checkbox" name="hospitais" class="unidade-checkbox" value="${unit.id}" ${isChecked ? 'checked' : ''}>
+                    ${nomeExibicao}
+                    <span class="checkmark"></span>
+                `;
+                container.appendChild(label);
             });
-        } else {
-            unidadeSelect.innerHTML = '<option value="" disabled selected>Nenhuma unidade cadastrada</option>';
-            unidadeSelect.disabled = true;
-            showMessage('Nenhuma unidade encontrada. O cadastro não pode ser realizado.', 'error');
         }
-
     } catch (error) {
         console.error('Erro ao carregar unidades:', error);
-        unidadeSelect.innerHTML = '<option value="" disabled selected>Erro ao carregar unidades</option>';
-        unidadeSelect.disabled = true;
     }
 }
 
+// --- 2. PESQUISA ATIVA ---
 
-// --- 2. Lógica de Edição (Mantida) ---
+if (btnBuscaCpf) {
+    btnBuscaCpf.addEventListener('click', async () => {
+        const cpfLimpo = cpfInput.value.replace(/\D/g, ''); 
+        
+        if (cpfLimpo.length !== 11) {
+            alert("Por favor, digite um CPF válido com 11 dígitos.");
+            return;
+        }
+
+        const token = getToken();
+        if (!token) return;
+
+        btnBuscaCpf.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const response = await fetch(`/api/medicos/busca-cpf/${cpfLimpo}`, {
+                method: 'GET',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const medico = await response.json();
+                if (confirm(`O médico "${medico.nome}" já possui cadastro. Deseja carregar os dados dele para edição?`)) {
+                    editingMedicoId = medico.id; 
+                    populateForm(medico);
+                }
+            } else if (response.status === 404) {
+                alert(`Médico não encontrado com o CPF ${cpfLimpo}.`);
+            } else {
+                const erro = await response.json();
+                alert("Erro na busca: " + (erro.erro || "Falha desconhecida"));
+            }
+        } catch (err) {
+            console.error("Erro na busca:", err);
+            alert("Erro de conexão com o servidor.");
+        } finally {
+            btnBuscaCpf.innerHTML = '<i class="fas fa-search"></i>';
+        }
+    });
+}
+
+// --- 3. Lógica de Edição e Preenchimento ---
 
 async function loadMedicoForEditing(medicoId, token) {
     try {
@@ -108,113 +183,149 @@ async function loadMedicoForEditing(medicoId, token) {
                 'Content-Type': 'application/json'
             }
         });
-        
-        if (response.status === 404) {
-            showMessage('Médico não encontrado.', 'error');
-            return null;
-        }
-        if (!response.ok) {
-            const result = await response.json();
-            showMessage(result.erro || 'Erro ao carregar dados para edição.', 'error');
-            return null;
-        }
-        
-        const medicoData = await response.json();
-        return medicoData; 
-        
+        if (!response.ok) return null;
+        return await response.json(); 
     } catch (error) {
         console.error('Erro ao buscar dados do médico:', error);
-        showMessage('Erro de conexão ao carregar dados do médico.', 'error');
         return null;
     }
 }
 
-function populateForm(medico) {
-    // Popula campos básicos
-    document.getElementById('nome').value = medico.nome;
-    document.getElementById('crm').value = medico.crm;
-    document.getElementById('especialidade').value = medico.especialidade;
-    
-    // Popula NOVOS campos
-    document.getElementById('data_nasc').value = medico.data_nasc ? medico.data_nasc.split('T')[0] : '';
-    document.getElementById('rqe').value = medico.rqe || '';
-    
-    // Popula checkboxes (Áreas de Atuação)
-    document.getElementById('porta').checked = medico.porta;
-    document.getElementById('emergencia').checked = medico.emergencia;
-    document.getElementById('enfermaria').checked = medico.enfermaria;
-    document.getElementById('ambulatorio').checked = medico.ambulatorio;
-    document.getElementById('uti').checked = medico.uti;
+async function populateForm(medico) {
+    console.log("======= [DEBUG] DIAGNÓSTICO DE DADOS =======");
+    console.log("1. Objeto Completo:", medico);
+    console.log("2. Chaves disponíveis:", Object.keys(medico));
+    console.log("3. Teste de Datas:");
+    console.log("   - data_pals:", medico.data_pals);
+    console.log("   - dt_pals:", medico.dt_pals);
+    console.log("   - data_acls:", medico.data_acls);
+    console.log("   - dt_acls:", medico.dt_acls);
+    console.log("============================================");
 
-    // Atualiza título e botão
-    const titleElement = document.querySelector('.main-content h2'); 
-    if (titleElement) {
-        titleElement.textContent = '✏️ Editar Médico';
+    const setFieldValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = (value || '').toUpperCase();
+        } else {
+            console.warn(`[DEBUG] Elemento '${id}' não encontrado.`);
+        }
+    };
+
+    // Dados Pessoais
+    setFieldValue('nome', medico.nome);
+    
+    if (document.getElementById('data_nasc')) {
+        const dNasc = medico.data_nasc || medico.data_nascimento || medico.dt_nasc || '';
+        document.getElementById('data_nasc').value = dNasc ? dNasc.split('T')[0] : '';
     }
     
-    // Na edição, oculta a seção de agendamento
-    if (trainingTitle) {
-        trainingTitle.style.display = 'none';
-    }
-    if (trainingFields) {
-        trainingFields.style.display = 'none';
+    const cpfRaw = medico.cpf || '';
+    if (document.getElementById('cpf')) {
+        document.getElementById('cpf').value = cpfRaw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
     
-    submitButton.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
-    submitButton.classList.remove('btn-primary');
-    submitButton.classList.add('btn-success');
+    setFieldValue('email', medico.email);
+    
+    const telRaw = medico.telefone || '';
+    if (document.getElementById('telefone')) {
+        document.getElementById('telefone').value = telRaw.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    }
+
+    // Profissional
+    setFieldValue('crm', medico.crm);
+    setFieldValue('especialidade', medico.especialidade);
+    setFieldValue('rqe', medico.rqe);
+    setFieldValue('empresa', medico.empresa);
+    setFieldValue('observacao', medico.observacao);
+
+    // Sincronização dos Hospitais
+    const token = localStorage.getItem('userToken');
+    initialHospitaisIds = medico.hospitais_ids ? medico.hospitais_ids.map(id => String(id)) : [];
+    await loadUnits(token, initialHospitaisIds);
+
+    // Checkboxes (Lógica Reforçada)
+    const areas = ['porta', 'emergencia', 'enfermaria', 'ambulatorio', 'uti', 'pals', 'acls', 'integracao', 'ativacao_senha'];
+    areas.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.checked = (medico[id] === true || medico[id] === 1 || medico[id] === "1" || medico[id] === "true");
+            console.log(`[DEBUG] Checkbox ${id} -> ${el.checked}`);
+        }
+    });
+
+    // DATAS ACLS / PALS (Lógica Blindada contra nomes de chaves diferentes)
+    const elPals = document.getElementById('data_pals');
+    if (elPals) {
+        const valPals = medico.data_pals || medico.dt_pals || '';
+        elPals.value = (valPals && valPals !== "") ? valPals.split('T')[0] : '';
+        console.log(`[DEBUG] Final data_pals: "${elPals.value}"`);
+    }
+
+    const elAcls = document.getElementById('data_acls');
+    if (elAcls) {
+        const valAcls = medico.data_acls || medico.dt_acls || '';
+        elAcls.value = (valAcls && valAcls !== "") ? valAcls.split('T')[0] : '';
+        console.log(`[DEBUG] Final data_acls: "${elAcls.value}"`);
+    }
+
+    // Interface
+    const titleElement = document.getElementById('page-title'); 
+    if (titleElement) titleElement.innerHTML = '<i class="fas fa-edit"></i> Editando Médico';
+    
+    if (trainingTitle) trainingTitle.style.display = 'block'; 
+    if (trainingFields) trainingFields.style.display = 'flex';
+    
+    submitButton.innerHTML = '<i class="fas fa-save"></i> Atualizar Dados';
+    submitButton.className = 'btn-success';
+    
+    console.log("--- POPULATE FORM FINALIZADO ---");
 }
 
-
-// --- 3. Enviar Formulário de Cadastro/Edição (FINALMENTE CORRIGIDO PARA O MODAL) ---
+// --- 4. Submissão do Formulário ---
 
 medicoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const token = getToken();
     if (!token) return;
+
+    const checkboxesMarcados = document.querySelectorAll('input[name="hospitais"]:checked');
+    const selectedHospitais = Array.from(checkboxesMarcados).map(cb => cb.value);
+
+    if (selectedHospitais.length === 0) {
+        alert("Por favor, selecione ao menos um hospital/unidade.");
+        return;
+    }
 
     const isEditing = editingMedicoId !== null;
     const method = isEditing ? 'PUT' : 'POST';
     const endpoint = isEditing ? `/api/medicos/${editingMedicoId}` : '/api/medicos';
 
     submitButton.disabled = true;
-    submitButton.innerHTML = isEditing ? '<i class="fas fa-spinner fa-spin"></i> Salvando...' : '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-    messageArea.textContent = '';
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
 
     const formData = new FormData(medicoForm);
-    const data = Object.fromEntries(formData.entries());
+    const rawData = Object.fromEntries(formData.entries());
     
-    // --- Dados do Médico ---
     const medicoData = {
-        nome: data.nome,
-        crm: data.crm,
-        especialidade: data.especialidade,
-        unidade_id: parseInt(data.unidade_id, 10), 
-        
-        // Novos campos
-        porta: !!data.porta,
-        emergencia: !!data.emergencia,
-        enfermaria: !!data.enfermaria,
-        ambulatorio: !!data.ambulatorio,
-        uti: !!data.uti,
-        data_nasc: data.data_nasc || null,
-        rqe: data.rqe || null,
-
-        // Adicionando CPF, telefone, email, empresa e observacao
-        cpf: data.cpf || null, 
-        telefone: data.telefone || null, 
-        email: data.email || null, 
-        empresa: data.empresa || null, 
-        observacao: data.observacao || null, 
-        
-        // PALS e ACLS são enviados para que o medicoController crie o Agendamento PENDENTE
-        pals: data.pals,
-        acls: data.acls
+        ...rawData,
+        cpf: rawData.cpf.replace(/\D/g, ''),
+        telefone: rawData.telefone.replace(/\D/g, ''),
+        hospitais_ids: selectedHospitais,
+        unidade_id: selectedHospitais[0], 
+        porta: !!document.getElementById('porta')?.checked,
+        emergencia: !!document.getElementById('emergencia')?.checked,
+        enfermaria: !!document.getElementById('enfermaria')?.checked,
+        ambulatorio: !!document.getElementById('ambulatorio')?.checked,
+        uti: !!document.getElementById('uti')?.checked,
+        pals: !!document.getElementById('pals')?.checked,
+        acls: !!document.getElementById('acls')?.checked,
+        integracao: !!document.getElementById('integracao')?.checked,
+        ativacao_senha: !!document.getElementById('ativacao_senha')?.checked,
+        data_pals: document.getElementById('data_pals')?.value || null,
+        data_acls: document.getElementById('data_acls')?.value || null
     };
     
     try {
-        // PASSO 1: TENTAR CADASTRO/EDIÇÃO DO MÉDICO
         const response = await fetch(endpoint, {
             method: method,
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -224,52 +335,57 @@ medicoForm.addEventListener('submit', async (e) => {
         const result = await response.json();
 
         if (response.ok) {
-            
-            let finalMessage = result.mensagem;
-            
-            if (!isEditing) {
-                // PARA NOVO CADASTRO: Usa alert() (modal) e depois limpa o form
-                alert('✅ Sucesso: ' + finalMessage); 
-                medicoForm.reset(); 
-                
-            } else {
-                // PARA EDIÇÃO: Usa showMessage (alerta não-bloqueante) e redireciona
-                showMessage(finalMessage, 'success');
-                
-                 setTimeout(() => {
-                     window.location.href = '/medicos-lista.html'; 
-                 }, 1500); 
+            if (!medicoData.integracao) {
+                const novosHospitais = selectedHospitais.filter(id => !initialHospitaisIds.includes(String(id)));
+                if (novosHospitais.length > 0) {
+                    if (confirm(`Deseja gerar agendamentos automáticos?`)) {
+                        await fetch('/api/agendamentos/gerar-pendentes', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ 
+                                medico_id: editingMedicoId || result.id, 
+                                unidades: novosHospitais 
+                            })
+                        });
+                    }
+                }
             }
-            
+            alert('✅ Médico salvo com sucesso!');
+            window.location.href = '/medicos-lista.html';
         } else {
-            // Exibe a mensagem de erro (do backend)
-            showMessage(result.erro || 'Erro desconhecido ao processar o médico.', 'error');
+            alert('❌ Erro: ' + (result.erro || 'Falha ao salvar.'));
         }
-
     } catch (error) {
-        console.error('Erro na requisição:', error);
-        showMessage('Erro de conexão com o servidor.', 'error');
+        console.error(error);
+        alert('❌ Erro de conexão.');
     } finally {
         submitButton.disabled = false;
-        submitButton.innerHTML = isEditing ? '<i class="fas fa-save"></i> Salvar Alterações' : '<i class="fas fa-save"></i> Cadastrar';
+        submitButton.innerHTML = isEditing ? '<i class="fas fa-save"></i> Atualizar Dados' : '<i class="fas fa-save"></i> Concluir Cadastro';
     }
 });
 
-
-// --- Inicialização (Mantida) ---
+// --- 5. Inicialização ---
 
 document.addEventListener('DOMContentLoaded', async () => {
     const token = getToken();
     if (!token) return;
 
+    ['porta', 'emergencia', 'enfermaria', 'ambulatorio', 'uti', 'pals', 'acls', 'integracao', 'ativacao_senha'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('name', id);
+    });
+
     editingMedicoId = getMedicoIdFromUrl();
 
     if (editingMedicoId) {
-        const medico = await loadMedicoForEditing(editingMedicoId, token);
-        if (medico) {
-            await loadUnits(token, medico.unidade_id); 
-            populateForm(medico);
+        const response = await fetch(`/api/medicos/${editingMedicoId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const medico = await response.json();
+            await populateForm(medico);
         } else {
+            alert("Erro ao carregar dados.");
             await loadUnits(token);
         }
     } else {
@@ -277,10 +393,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Implementação da função de Logout no HTML (Mantida)
-document.getElementById('logout-button').addEventListener('click', () => {
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userName');
-    alert('Sessão encerrada com sucesso.');
-    window.location.href = '/login.html';
-});
+// Logout
+const logoutBtn = document.getElementById('logout-button');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    });
+}

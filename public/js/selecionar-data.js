@@ -10,36 +10,152 @@ document.addEventListener('DOMContentLoaded', () => {
     const unidadeNomeEl = document.getElementById('unidade-nome');
     const certificacoesEl = document.getElementById('certificacoes');
     const selecaoDataForm = document.getElementById('selecao-data-form');
+    
+    // Elementos de Seleção
     const dataSelecionadaEl = document.getElementById('data-selecionada');
+    const areaHorarios = document.getElementById('area-horarios'); 
+    const listaHorarios = document.getElementById('lista-horarios'); 
+    
     const statusMessageEl = document.getElementById('status-message');
     const submitButton = document.getElementById('submit-button');
 
-    // Datas disponíveis fixas (Seg, Qua, Sex - 15h)
-    const availableDates = [
-        // Dezembro/2025 (Seg, Qua, Sex)
-        "2025-12-01|15:00", "2025-12-03|15:00", "2025-12-05|15:00", 
-        "2025-12-08|15:00", "2025-12-10|15:00", "2025-12-12|15:00", 
-        "2025-12-15|15:00", "2025-12-17|15:00", "2025-12-19|15:00", 
-        "2025-12-22|15:00",
-        // Janeiro/2026 (Seg, Qua, Sex)
-        "2026-01-08|15:00", "2026-01-09|15:00", "2026-01-12|15:00", 
-        "2026-01-15|15:00", "2026-01-16|15:00", "2026-01-19|15:00", 
-        "2026-01-22|15:00", "2026-01-23|15:00", "2026-01-26|15:00", 
-        "2026-01-29|15:00", "2026-01-30|15:00"
-    ];
+    let horarioSelecionado = null;
+    let unidadeIdAtual = null; 
 
     /**
-     * Exibe a mensagem de status na tela e esconde o formulário.
-     * @param {string} message - Mensagem a ser exibida.
-     * @param {string} type - Tipo da mensagem ('loading', 'error', 'success').
+     * Gera dinamicamente apenas Segundas, Quartas e Sextas.
      */
+    function generateDynamicDates(weeksCount = 6) {
+        const dates = [];
+        const today = new Date();
+        
+        for (let i = 0; i < weeksCount * 7; i++) {
+            const current = new Date();
+            current.setDate(today.getDate() + i);
+            const dayOfWeek = current.getDay(); 
+            
+            // 1 = Segunda, 3 = Quarta, 5 = Sexta
+            if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
+                const yyyy = current.getFullYear();
+                const mm = String(current.getMonth() + 1).padStart(2, '0');
+                const dd = String(current.getDate()).padStart(2, '0');
+                dates.push(`${yyyy}-${mm}-${dd}`);
+            }
+        }
+        return dates;
+    }
+
+    /**
+     * Popula o campo SELECT com as datas válidas.
+     */
+    function populateDateOptions() {
+        if (!dataSelecionadaEl) return;
+        dataSelecionadaEl.innerHTML = '<option value="">Selecione o dia disponível...</option>';
+        const availableDates = generateDynamicDates();
+
+        availableDates.forEach(dateStr => {
+            const [year, month, day] = dateStr.split('-');
+            const dateObj = new Date(year, month - 1, day);
+            const label = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+            
+            const option = document.createElement('option');
+            option.value = dateStr; 
+            option.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+            dataSelecionadaEl.appendChild(option);
+        });
+    }
+
+    /**
+     * Gera a grade de horários com FILTRO DE EXCLUSIVIDADE
+     */
+    async function generateTimeGrid(dataSelecionada) {
+        listaHorarios.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Verificando disponibilidade...</p>';
+        horarioSelecionado = null;
+        submitButton.disabled = true;
+
+        try {
+            // AJUSTE: Incluído unidade_id na URL para evitar erro 400 no backend e filtragem correta
+            // ROTA: Alterada de /api para /auth conforme seu authRoutes.js
+            const response = await fetch(`/auth/public/agendamentos/disponibilidade?data=${dataSelecionada}&unidade_id=${unidadeIdAtual}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.erro || 'Erro ao consultar disponibilidade');
+            }
+
+            const ocupados = await response.json(); 
+            renderGrid(Array.isArray(ocupados) ? ocupados : []);
+
+        } catch (error) {
+            console.error('Erro na requisição de disponibilidade:', error);
+            listaHorarios.innerHTML = `<p style="color: #e74c3c;"><b>Erro:</b> ${error.message}. <br>Tente selecionar a data novamente.</p>`;
+        }
+    }
+
+    /**
+     * Função para desenhar os botões de horário
+     */
+    function renderGrid(ocupados) {
+        listaHorarios.innerHTML = "";
+        let hora = 13;
+        let min = 0;
+        let botaosGerados = 0;
+
+        // Gera slots de 20 em 20 min das 13h às 17h
+        while (hora < 17 || (hora === 17 && min === 0)) {
+            const time = `${String(hora).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+            
+            // REGRA DE EXCLUSIVIDADE:
+            // Oculta o horário se ele estiver ocupado por um hospital DIFERENTE do hospital do médico atual.
+            // Se o hospital for o mesmo (unidade_id igual), o horário continua aparecendo para permitir múltiplos médicos.
+            const conflitoOutroHospital = ocupados.some(ag => 
+                (ag.horario === time || (ag.horario_preferencial && ag.horario_preferencial.substring(0,5) === time)) && 
+                String(ag.unidade_id) !== String(unidadeIdAtual)
+            );
+
+            if (!conflitoOutroHospital) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-horario';
+                btn.innerHTML = `<b>${time}</b>`;
+                
+                btn.onclick = () => {
+                    document.querySelectorAll('.btn-horario').forEach(b => b.classList.remove('selecionado'));
+                    btn.classList.add('selecionado');
+                    horarioSelecionado = time;
+                    submitButton.disabled = false;
+                };
+                listaHorarios.appendChild(btn);
+                botaosGerados++;
+            }
+
+            min += 20;
+            if (min >= 60) { min = 0; hora++; }
+        }
+
+        if (botaosGerados === 0) {
+            listaHorarios.innerHTML = "<p style='color: orange;'>Nenhum horário disponível para esta data (exclusividade de outra unidade).</p>";
+        }
+    }
+
+    // Listener para carregar horários ao selecionar data
+    dataSelecionadaEl.addEventListener('change', (e) => {
+        if (e.target.value) {
+            areaHorarios.style.display = 'block';
+            generateTimeGrid(e.target.value);
+        } else {
+            areaHorarios.style.display = 'none';
+        }
+    });
+
     function displayStatus(message, type) {
         statusMessageEl.textContent = message;
         statusMessageEl.className = `${type}-state`;
         
-        // Esconde os elementos de interação e informação
-        infoArea.style.display = 'none';
-        selecaoDataForm.style.display = 'none';
+        if (type !== 'loading') {
+            if (infoArea) infoArea.style.display = 'none';
+            if (selecaoDataForm) selecaoDataForm.style.display = 'none';
+        }
 
         if (type === 'loading') {
             statusMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${message}`;
@@ -47,66 +163,25 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessageEl.style.display = 'block';
     }
 
-    /**
-     * Formata uma string de data (YYYY-MM-DD) para (DD/MM/AAAA).
-     * @param {string} dateString - Data no formato YYYY-MM-DD.
-     * @returns {string} Data no formato DD/MM/AAAA.
-     */
-    function formatDate(dateString) {
-        if (!dateString) return 'N/A';
-        const [year, month, day] = dateString.split('-');
-        return `${day}/${month}/${year}`;
-    }
-
-    /**
-     * Carrega as opções de data e hora no select.
-     */
-    function populateDateOptions() {
-        // Limpa opções antigas
-        dataSelecionadaEl.innerHTML = '<option value="">Selecione uma data disponível</option>';
-
-        availableDates.forEach(dateTimeStr => {
-            const [date, time] = dateTimeStr.split('|');
-            const formattedDate = formatDate(date);
-            const option = document.createElement('option');
-            
-            // O valor é o formato YYYY-MM-DD|HH:MM, fácil de processar no backend
-            option.value = dateTimeStr; 
-            option.textContent = `${formattedDate} - ${time}h`;
-            dataSelecionadaEl.appendChild(option);
-        });
-    }
-
-    /**
-     * Função principal para carregar os dados do convite.
-     */
     async function loadConviteDetails() {
-        if (!agendamentoId) {
-            return displayStatus('Erro: Identificador de agendamento não fornecido no link.', 'error');
-        }
-
-        displayStatus('Carregando dados do convite...', 'loading');
+        if (!agendamentoId) return displayStatus('Erro: Link de convite inválido.', 'error');
+        displayStatus('Carregando seus dados...', 'loading');
 
         try {
-            // 🛑 CORREÇÃO AQUI: Removido o '/public' da URL. A rota correta é /api/agendamentos/convite/:id
-            const response = await fetch(`/api/agendamentos/convite/${agendamentoId}`);
+            // ROTA: Alterada de /api para /auth conforme seu authRoutes.js
+            const response = await fetch(`/auth/public/agendamentos/convite/${agendamentoId}`);
             const result = await response.json();
 
-            if (!response.ok) {
-                // Se o ID já foi usado para pré-agendamento ou é inválido
-                const message = result.erro || 'Convite inválido ou já utilizado.';
-                return displayStatus(message, 'error');
-            }
+            if (!response.ok) return displayStatus(result.erro || 'Este convite não está mais ativo.', 'error');
 
             const agendamento = result.agendamento;
+            unidadeIdAtual = agendamento.unidade_id; // Define o hospital atual para o filtro de exclusividade
 
-            // 1. Verificar o status atual
             if (agendamento.status !== 'PENDENTE' && agendamento.status !== 'CONVITE_ENVIADO') {
-                return displayStatus('Este agendamento já foi selecionado e/ou está em andamento. Entre em contato com o setor de Qualidade.', 'error');
+                return displayStatus('Este agendamento já foi preenchido ou está em processamento.', 'error');
             }
 
-            // 2. Preencher a área de informações
-            medicoNomeEl.textContent = agendamento.medico_nome || 'Médico(a) não identificado(a)';
+            medicoNomeEl.textContent = agendamento.medico_nome || 'Doutor(a)';
             unidadeNomeEl.textContent = agendamento.unidade_nome || 'N/A';
             
             let certs = [];
@@ -114,67 +189,57 @@ document.addEventListener('DOMContentLoaded', () => {
             if (agendamento.acls) certs.push('ACLS');
             certificacoesEl.textContent = certs.length > 0 ? certs.join(' e ') : 'Nenhuma';
             
-            infoArea.style.display = 'block';
-
-            // 3. Preencher opções e mostrar o formulário
             populateDateOptions();
+            infoArea.style.display = 'block';
             statusMessageEl.style.display = 'none';
             selecaoDataForm.style.display = 'block';
 
         } catch (error) {
-            console.error('Erro ao carregar detalhes do convite:', error);
-            displayStatus('Erro de conexão ao carregar os dados. Tente novamente.', 'error');
+            console.error('Erro ao carregar detalhes:', error);
+            displayStatus('Falha na conexão. Por favor, verifique sua internet e recarregue a página.', 'error');
         }
     }
     
-    // --- Lógica de Submissão do Formulário ---
     selecaoDataForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const data_preferencial = dataSelecionadaEl.value;
         
-        const selectedDateTime = dataSelecionadaEl.value;
-        if (!selectedDateTime) {
-            alert('Por favor, selecione uma data e horário.');
+        if (!data_preferencial || !horarioSelecionado) {
+            alert('Por favor, selecione um dia e um horário disponível.');
             return;
         }
-
-        const [data_preferencial, horario_preferencial] = selectedDateTime.split('|');
 
         submitButton.disabled = true;
         submitButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Confirmando...`;
 
         try {
-            // 🛑 CORREÇÃO AQUI: Removido o '/public' e corrigido o endpoint para '/selecao/'.
-            const response = await fetch(`/api/agendamentos/selecao/${agendamentoId}`, {
+            // ROTA: Alterada de /api para /auth conforme seu authRoutes.js
+            const response = await fetch(`/auth/public/agendamentos/selecionar-data/${agendamentoId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     data_preferencial, 
-                    horario_preferencial,
-                    status: 'PRE_AGENDADO' // O backend deve garantir esta mudança
+                    horario_preferencial: horarioSelecionado
                 })
             });
 
-            const result = await response.json();
-
             if (response.ok) {
+                const dataBR = data_preferencial.split('-').reverse().join('/');
                 displayStatus(
-                    `Parabéns, Dr(a) ${medicoNomeEl.textContent}! Sua preferência de treinamento para o dia ${formatDate(data_preferencial)} às ${horario_preferencial}h foi registrada com sucesso. A Equipe de Qualidade entrará em contato para a confirmação final.`, 
+                    `Sucesso! Dr(a) ${medicoNomeEl.textContent}, sua integração no ${unidadeNomeEl.textContent} foi pré-agendada para ${dataBR} às ${horarioSelecionado}.`, 
                     'success'
                 );
             } else {
-                const message = result.erro || 'Erro ao registrar sua seleção. Tente novamente ou entre em contato.';
-                displayStatus(`Falha: ${message}`, 'error');
+                const result = await response.json();
+                displayStatus(`Erro ao salvar: ${result.erro}`, 'error');
+                submitButton.disabled = false;
+                submitButton.innerHTML = `<i class="fas fa-calendar-alt"></i> Confirmar Seleção`;
             }
-
         } catch (error) {
-            console.error('Erro ao submeter a seleção:', error);
-            displayStatus('Erro de conexão ao tentar registrar a seleção.', 'error');
-        } finally {
+            displayStatus('Erro de conexão ao salvar sua escolha.', 'error');
             submitButton.disabled = false;
-            submitButton.innerHTML = `<i class="fas fa-calendar-alt"></i> Confirmar Seleção`;
         }
     });
 
-    // Inicia o carregamento
     loadConviteDetails();
 });

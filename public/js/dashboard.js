@@ -4,10 +4,8 @@ const welcomeMessage = document.getElementById('welcome-message');
 const currentDateTimeElement = document.getElementById('current-datetime');
 const logoutButton = document.getElementById('logout-button');
 const appointmentList = document.getElementById('agendamentos-list');
-const pendenciasList = document.getElementById('pendencias-list');
-// Elementos para o Toggle do Menu
-const menuToggle = document.getElementById('menu-toggle');
-const sidebar = document.querySelector('.sidebar');
+const pendenciasList = document.getElementById('pendencias-list'); 
+const weeklyCalendar = document.getElementById('weekly-calendar'); 
 
 // Função para atualizar data e hora
 function updateDateTime() {
@@ -22,48 +20,19 @@ function updateDateTime() {
 }
 
 // =========================================================================
-// CORREÇÃO CRUCIAL: LÓGICA DE RESPONSIVIDADE (SIDEBAR TOGGLE)
-// =========================================================================
-
-function setupSidebarToggle() {
-    if (menuToggle && sidebar) {
-        // 🚨 CORREÇÃO: Adicionando 'event.preventDefault()' para evitar que o clique no botão cause um comportamento padrão (como um recarregamento/flicker)
-        menuToggle.addEventListener('click', (event) => {
-            event.preventDefault(); // Evita o comportamento padrão do botão
-            // Adiciona ou remove a classe 'open' que o CSS usa para mostrar/esconder
-            sidebar.classList.toggle('open');
-        });
-        
-        // Opcional: Fechar o menu ao clicar em um link (útil no mobile)
-        const navLinks = sidebar.querySelectorAll('.main-nav a');
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                // Fecha a sidebar após o clique no mobile
-                if (sidebar.classList.contains('open') && window.innerWidth < 768) {
-                     sidebar.classList.remove('open');
-                }
-            });
-        });
-    }
-}
-
-
-// =========================================================================
 // FUNÇÕES DE REQUISIÇÃO E AUTENTICAÇÃO
 // =========================================================================
 
-// Função para fazer requisição autenticada (Obrigatório o token JWT)
 async function fetchAuthenticatedData(endpoint, token) {
     const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${token}`, // ENVIANDO O TOKEN JWT!
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         }
     });
 
     if (response.status === 401) {
-        // Se a API retornar 401 (Não Autorizado), força o logout
         localStorage.removeItem('userToken');
         localStorage.removeItem('userName');
         alert('Sessão inválida ou expirada. Faça o login novamente.');
@@ -81,12 +50,70 @@ async function fetchAuthenticatedData(endpoint, token) {
 }
 
 // =========================================================================
-// LÓGICA DE CARREGAMENTO DE DADOS E RENDERIZAÇÃO
+// 🎯 ATUALIZADO: AGENDA SEMANA CORRENTE (SEG A SEX) - APENAS STATUS AGENDADO
 // =========================================================================
 
-// Função para buscar e renderizar as unidades no filtro
+async function renderWeeklyCalendar(token) {
+    if (!weeklyCalendar) return;
+    
+    const data = await fetchAuthenticatedData('/api/agendamentos', token);
+    const agendamentos = data && data.agendamentos ? data.agendamentos : [];
+
+    weeklyCalendar.innerHTML = '';
+    
+    // Lógica para encontrar a Segunda-feira da semana atual
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 (Dom) a 6 (Sáb)
+    const diffToMonday = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const monday = new Date(today.setDate(diffToMonday));
+    
+    // Loop de 5 dias (Segunda a Sexta)
+    for (let i = 0; i < 5; i++) {
+        const currentDate = new Date(monday);
+        currentDate.setDate(monday.getDate() + i);
+        const dateString = currentDate.toISOString().split('T')[0];
+
+        const col = document.createElement('div');
+        col.className = 'calendar-day-column';
+        
+        const dayLabel = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' });
+        const dayNum = currentDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+        col.innerHTML = `<div class="day-header"><span>${dayLabel}</span><h4>${dayNum}</h4></div>`;
+
+        // 🎯 FILTRO: Apenas o que estiver com status AGENDADO para o dia específico
+        const dailyApps = agendamentos.filter(a => 
+            a.data_integracao && 
+            a.data_integracao.startsWith(dateString) && 
+            a.status.toUpperCase() === 'AGENDADO'
+        );
+
+        if (dailyApps.length > 0) {
+            dailyApps.forEach(app => {
+                const card = document.createElement('div');
+                card.className = `appointment-mini-card status-agendado`;
+                card.innerHTML = `
+                    <strong>${app.horario || '--:--'}</strong>
+                    <span>Dr. ${app.medico_nome ? app.medico_nome.split(' ')[0] : 'Médico'}</span>
+                    <em>${app.unidade_nome || 'Unidade'}</em>
+                `;
+                col.appendChild(card);
+            });
+        } else {
+            col.innerHTML += `<p class="no-appointments">Vazio</p>`;
+        }
+        weeklyCalendar.appendChild(col);
+    }
+}
+
+// =========================================================================
+// LÓGICA DE CARREGAMENTO DE UNIDADES E KPIs
+// =========================================================================
+
 async function loadUnits(token) {
     const unitSelect = document.getElementById('appointment-unit');
+    if (!unitSelect) return;
+
     while (unitSelect.options.length > 1) {
         unitSelect.remove(1);
     }
@@ -100,89 +127,109 @@ async function loadUnits(token) {
             option.textContent = unit.nome;
             unitSelect.appendChild(option);
         });
-    } else {
-        const option = document.createElement('option');
-        option.value = ""; 
-        option.textContent = "Nenhuma unidade cadastrada";
-        unitSelect.appendChild(option);
-        unitSelect.disabled = true;
     }
 }
 
 function renderKpis(data) {
     document.getElementById('total-medicos').textContent = data.totalMedicos || '0';
     document.getElementById('agendamentos-semana').textContent = data.agendamentosSemana || '0';
-    
-    document.getElementById('treinamentos-pre-agendados-semana').textContent = data.treinamentosPreAgendadosSemana || '0';
-    document.getElementById('treinamentos-realizados-semana').textContent = data.treinamentosRealizadosSemana || '0';
-    document.getElementById('convites-enviados-semana').textContent = data.convitesEnviadosSemana || '0';
-    
+    document.getElementById('treinamentos-mes').textContent = data.treinamentosMes || '0';
     document.getElementById('atendimentos-ano').textContent = data.atendimentosAno || '0';
 }
 
 async function loadKpis(token) {
     const data = await fetchAuthenticatedData('/api/dashboard/kpis', token); 
-    if (data) {
-        renderKpis(data);
-    } else {
-        renderKpis({}); 
-    }
+    if (data) renderKpis(data);
 }
+
+// =========================================================================
+// 🎯 ATUALIZADO: PENDÊNCIAS OPERACIONAIS (TERMOS REMOVIDOS)
+// =========================================================================
 
 async function loadOperationalPendencies(token) {
     if (!token) return;
 
-    pendenciasList.innerHTML = '';
-    
     try {
-        // Adiciona o item Termos não lidos (simulado)
-        const itemTermos = document.createElement('li');
-        itemTermos.innerHTML = 'Termos não lidos: <span>5</span>'; 
-        pendenciasList.appendChild(itemTermos);
+        const data = await fetchAuthenticatedData('/api/agendamentos', token);
+        const agendamentos = data.agendamentos || [];
+
+        pendenciasList.innerHTML = ''; 
+
+        // Agendamentos Pendentes
+        const pendentesTotal = agendamentos.filter(a => a.status === 'PENDENTE').length;
+        const itemPendente = document.createElement('li');
+        itemPendente.style.cursor = 'pointer';
+        itemPendente.innerHTML = `Agendamentos Pendentes: <span>${pendentesTotal}</span>`;
+        itemPendente.onclick = () => window.location.href = '/agendamentos.html';
+        pendenciasList.appendChild(itemPendente);
+
+        // Aguardando Integração
+        const aguardandoInteg = agendamentos.filter(a => a.status === 'AGENDADO').length;
+        const itemInteg = document.createElement('li');
+        itemInteg.style.cursor = 'pointer';
+        itemInteg.innerHTML = `Aguardando Integração: <span>${aguardandoInteg}</span>`;
+        itemInteg.onclick = () => window.location.href = '/agendamentos.html?status=AGENDADO';
+        pendenciasList.appendChild(itemInteg);
+
+        // 🎯 AJUSTADO: Aguardando Confirmação do Médico (Aceita CONVITE ENVIADO ou CONVITE_ENVIADO)
+        const aguardandoConf = agendamentos.filter(a => 
+            a.status === 'CONVITE ENVIADO' || a.status === 'CONVITE_ENVIADO'
+        ).length;
+        
+        const itemConf = document.createElement('li');
+        itemConf.style.cursor = 'pointer';
+        itemConf.innerHTML = `Aguardando Confirmação Médico(a): <span>${aguardandoConf}</span>`;
+        itemConf.onclick = () => window.location.href = '/agendamentos.html?status=CONVITE_ENVIADO';
+        pendenciasList.appendChild(itemConf);
+
+        // 🎯 REMOVIDO: Termos não lidos conforme solicitado.
         
     } catch (error) {
-        console.error('Erro ao carregar pendências operacionais:', error);
-        pendenciasList.innerHTML = `
-            <li>Falha ao carregar Pendentes</li>
-        `;
+        console.error('Erro ao carregar pendências:', error);
     }
 }
 
+// =========================================================================
+// 🎯 ATUALIZADO: PESQUISA (SÓ BUSCA AO CLICAR EM BUSCAR)
+// =========================================================================
 
 function renderAppointments(agendamentos) {
     appointmentList.innerHTML = ''; 
 
     if (!agendamentos || agendamentos.length === 0) {
-        appointmentList.innerHTML = '<p class="placeholder-text">Nenhum agendamento encontrado com os filtros selecionados.</p>';
+        appointmentList.innerHTML = '<p class="placeholder-text">Nenhum agendamento encontrado para este filtro.</p>';
         return;
     }
 
     agendamentos.forEach(app => {
         const item = document.createElement('div');
         item.className = 'list-item';
+        const dataExibicao = app.data_integracao ? new Date(app.data_integracao).toLocaleDateString('pt-BR') : 'Sem data';
+        
         item.innerHTML = `
             <div>
-                <strong>Dr. ${app.medico_nome}</strong> - CRM: ${app.medico_crm}
+                <strong>Dr. ${app.medico_nome || 'Não informado'}</strong>
                 <br>
-                <small>${new Date(app.data_integracao).toLocaleDateString('pt-BR')} ${app.horario} | ${app.unidade_nome}</small>
+                <small>${dataExibicao} ${app.horario || ''} | ${app.unidade_nome || 'Unidade N/I'}</small>
             </div>
-            <span class="status ${app.status.toLowerCase()}">${app.status}</span>
+            <span class="status ${app.status.toLowerCase().replace(/\s+/g, '-')}">${app.status}</span>
         `;
         appointmentList.appendChild(item);
     });
 }
 
-
 async function loadAppointments(token, filters = {}) {
     const { date, unit } = filters;
     
+    // 🎯 Só executa se houver pelo menos um filtro selecionado para evitar redundância na tela
+    if (!date && !unit) return;
+
     const query = new URLSearchParams();
-    if (date) query.append('data', date); 
-    if (unit) query.append('unidade_id', unit); 
-    query.append('status', 'AGENDADO'); 
+    if (date) query.append('data', date);
+    if (unit) query.append('unidade_id', unit);
     
     const endpoint = `/api/agendamentos?${query.toString()}`;
-    appointmentList.innerHTML = '<p class="placeholder-text">Buscando agendamentos...</p>';
+    appointmentList.innerHTML = '<p class="placeholder-text"><i class="fas fa-spinner fa-spin"></i> Buscando...</p>';
     
     const data = await fetchAuthenticatedData(endpoint, token);
     
@@ -197,7 +244,6 @@ async function loadAppointments(token, filters = {}) {
 // EVENT LISTENERS E INICIALIZAÇÃO
 // =========================================================================
 
-// Configura os listeners para os filtros de agendamento
 function setupAppointmentFilters(token) {
     loadUnits(token); 
     
@@ -205,58 +251,42 @@ function setupAppointmentFilters(token) {
     const unitSelect = document.getElementById('appointment-unit');
     const searchButton = document.querySelector('.appointment-filters .btn-primary');
 
-    searchButton.addEventListener('click', () => {
-        const filters = {
-            date: dateInput.value,
-            unit: unitSelect.value
-        };
-        loadAppointments(token, filters);
-    });
+    if (searchButton) {
+        searchButton.addEventListener('click', () => {
+            loadAppointments(token, { date: dateInput.value, unit: unitSelect.value });
+        });
+    }
     
-    // Carrega a lista inicial (ex: agendamentos de hoje)
-    dateInput.value = new Date().toISOString().split('T')[0];
-    loadAppointments(token, { date: dateInput.value });
+    // Campo de data por padrão vem com hoje, mas não dispara o load automático
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 }
 
-
-// Verifica o Token e Carrega Dados do Usuário
 function initializeDashboard() {
     const token = localStorage.getItem('userToken');
     const userName = localStorage.getItem('userName');
 
     if (!token || !userName) {
-        alert('Sua sessão expirou ou não está logado. Faça o login novamente.');
         window.location.href = '/login.html';
         return;
     }
     
-    welcomeMessage.textContent = `Olá, ${userName}`;
-    
-    // Inicializa a lógica de toggle do menu
-    setupSidebarToggle();
+    if (welcomeMessage) welcomeMessage.textContent = `Olá, ${userName}`;
     
     updateDateTime();
     setInterval(updateDateTime, 60000); 
     
-    // 1. Carrega KPIs
     loadKpis(token);
-    
-    // 2. Configura e carrega a lista de Agendamentos
     setupAppointmentFilters(token);
-    
-    // 3. Carrega Pendências Operacionais
     loadOperationalPendencies(token); 
+    renderWeeklyCalendar(token); 
 }
 
-// Função de Logout
-logoutButton.addEventListener('click', () => {
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userName');
-    
-    alert('Sessão encerrada com sucesso.');
-    window.location.href = '/login.html';
-});
+if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userName');
+        window.location.href = '/login.html';
+    });
+}
 
-
-// Inicia o dashboard
 initializeDashboard();

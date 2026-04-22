@@ -1,225 +1,157 @@
 // public/js/ativacao-senha.js
 
-const API_BASE_URL = '/api/ativacoes'; // Seu prefixo de rota
-let selectedSlot = null; // Armazena o slot atualmente selecionado
+const ativacaoTableBody = document.getElementById('ativacao-table-body');
+const searchButton = document.getElementById('search-button');
+const dataFilter = document.getElementById('filter-data');
+const statusFilter = document.getElementById('filter-status');
 
-// Elementos DOM
-const dataSelecao = document.getElementById('dataSelecao');
-const slotsContainer = document.getElementById('slotsContainer');
-const btnAgendar = document.getElementById('btnAgendar');
-const statusMessage = document.getElementById('statusMessage');
-const loadingIndicator = document.getElementById('loading');
-const tituloPrincipal = document.querySelector('.container h2'); // Para personalização
+const meetModal = document.getElementById('meet-modal');
 
-// Campos Ocultos para Dados do Médico
-const medicoIdInput = document.getElementById('medicoId');
-const medicoTelefoneInput = document.getElementById('medicoTelefone');
-const medicoCrmInput = document.getElementById('medicoCrm');
-const tokenConviteInput = document.getElementById('tokenConvite'); // Onde guardamos o token da URL
+const getToken = () => localStorage.getItem('userToken');
 
-// Configura a data mínima para hoje
-const hoje = new Date().toISOString().split('T')[0];
-dataSelecao.min = hoje;
-dataSelecao.value = hoje;
+// 1. Carregar Ativações
+async function loadAtivacoes() {
+    const token = getToken();
+    if (!token) return;
 
-// --- FUNÇÕES DE INTERFACE E UTILIDADE ---
+    const params = new URLSearchParams();
+    if (dataFilter && dataFilter.value) params.append('data', dataFilter.value);
+    if (statusFilter && statusFilter.value) params.append('status', statusFilter.value);
 
-function getUrlParam(name) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
-}
-
-function showLoading(show) {
-    loadingIndicator.style.display = show ? 'inline-block' : 'none';
-    // Só habilita o botão se o loading estiver falso E houver um slot selecionado
-    btnAgendar.disabled = show || !selectedSlot; 
-    dataSelecao.disabled = show; // Desabilita a seleção de data durante o carregamento
-}
-
-function updateStatus(message, type = 'info') {
-    statusMessage.className = `alert alert-${type}`;
-    statusMessage.textContent = message;
-}
-
-function renderSlots(janelas, data) {
-    slotsContainer.innerHTML = '';
-    selectedSlot = null;
-    btnAgendar.disabled = true;
-
-    if (janelas.length === 0) {
-        updateStatus(`Nenhum horário disponível em ${data}. Tente outra data.`, 'warning');
-        return;
-    }
-
-    updateStatus(`Horários disponíveis em ${data}. Clique em um slot para agendar.`, 'info');
-
-    janelas.forEach(janela => {
-        const slotDiv = document.createElement('div');
-        slotDiv.className = 'col-4 col-md-3 btn btn-outline-secondary slot';
-        slotDiv.textContent = janela.horario;
-        slotDiv.setAttribute('data-data', janela.data);
-        slotDiv.setAttribute('data-horario', `${janela.horario}:00`);
-        
-        // Lógica de seleção
-        slotDiv.addEventListener('click', () => {
-            // Desseleciona todos
-            document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected', 'btn-primary'));
-            
-            // Seleciona o atual
-            slotDiv.classList.add('selected', 'btn-primary');
-            selectedSlot = {
-                data: janela.data,
-                horario: slotDiv.getAttribute('data-horario')
-            };
-            btnAgendar.disabled = false;
+    try {
+        const response = await fetch(`/api/ativacoes-senha?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (!response.ok) throw new Error('Falha ao carregar dados');
+        
+        const data = await response.json();
+        renderTable(data);
+    } catch (error) {
+        console.error('Erro ao carregar ativações:', error);
+    }
+}
 
-        slotsContainer.appendChild(slotDiv);
+// 2. Renderizar a Tabela - Focada em M'Boi
+function renderTable(data) {
+    if (!ativacaoTableBody) return;
+    ativacaoTableBody.innerHTML = '';
+    if (!Array.isArray(data)) return;
+
+    data.forEach(item => {
+        // 💡 Proteção extra frontend: Garante que apenas M'Boi apareça
+        if (!item.unidade_nome || !item.unidade_nome.toUpperCase().includes('MBOI')) return;
+
+        const tr = document.createElement('tr');
+        
+        const dataExibicao = item.data_agendamento 
+            ? new Date(item.data_agendamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) 
+            : '---';
+        
+        const statusAtual = item.status || 'PENDENTE';
+
+        tr.innerHTML = `
+            <td>${item.medico_nome || '---'}</td>
+            <td>${item.unidade_nome || '---'}</td>
+            <td>${dataExibicao}</td>
+            <td>${item.horario_agendamento || '---'}</td>
+            <td><span class="status-badge status-${statusAtual.toLowerCase()}">${statusAtual}</span></td>
+            <td class="acoes-cell"></td>
+        `;
+
+        const acoesCell = tr.querySelector('.acoes-cell');
+        const btnAcao = criarBotaoAcao(item);
+        if (btnAcao) acoesCell.appendChild(btnAcao);
+
+        ativacaoTableBody.appendChild(tr);
     });
 }
 
-// --- FUNÇÕES DE BACKEND ---
+// 3. Criação de botões
+function criarBotaoAcao(item) {
+    const btn = document.createElement('button');
+    const telefone = item.telefone ? item.telefone.replace(/\D/g, '') : '';
+    const statusAtual = item.status || 'PENDENTE';
 
-/**
- * 1. Busca os dados do médico usando o token da URL.
- */
-async function initializePage() {
-    const token = getUrlParam('token');
-
-    if (!token) {
-        updateStatus("Erro: Convite inválido. O token de acesso não foi encontrado na URL.", 'danger');
-        return;
+    if (statusAtual === 'PENDENTE') {
+        btn.className = 'btn-invite';
+        btn.innerHTML = '<i class="fab fa-whatsapp"></i> Gerar Convite';
+        btn.onclick = () => gerarConviteAtivacao(item.medico_id);
+        return btn;
     }
 
-    tokenConviteInput.value = token;
-    showLoading(true);
-    updateStatus('Validando seu convite e carregando dados...', 'info');
-    
-    try {
-        // Chamada para o novo endpoint de validação de token
-        const response = await fetch(`${API_BASE_URL}/data/${token}`);
-        const data = await response.json();
-
-        if (response.ok) {
-            // Preenche os campos ocultos com os dados do médico
-            medicoIdInput.value = data.medicoId;
-            medicoTelefoneInput.value = data.telefone;
-            medicoCrmInput.value = data.crm;
-            
-            // Personaliza a interface
-            tituloPrincipal.textContent = `Bem-vindo(a), Dr(a). ${data.nome.split(' ')[0]}!`;
-            
-            // Após carregar os dados, carrega os slots disponíveis
-            await fetchSlots();
-            
-        } else {
-            // Se o token for inválido, usado ou expirado
-            updateStatus(`Erro na validação do convite: ${data.erro}.`, 'danger');
-            slotsContainer.innerHTML = ''; // Limpa os slots
-        }
-    } catch (error) {
-        updateStatus('Erro de conexão ao validar o convite. Verifique sua rede.', 'danger');
-        console.error('Validation error:', error);
-    } finally {
-        showLoading(false);
+    if (statusAtual === 'AGENDADO') {
+        btn.className = 'btn-success';
+        btn.innerHTML = '<i class="fab fa-whatsapp"></i> Iniciar Meet';
+        btn.onclick = () => abrirModalMeet(item.ativacao_id, telefone, item.medico_nome, item.meet_link);
+        return btn;
     }
+
+    const span = document.createElement('span');
+    span.className = 'text-muted';
+    span.innerText = statusAtual === 'CONVITE_ENVIADO' ? 'Aguardando Médico' : 'Concluído';
+    return span;
 }
 
-
-/**
- * 2. Busca os slots disponíveis para a data selecionada.
- */
-async function fetchSlots() {
-    const dataSelecionada = dataSelecao.value;
-    if (!dataSelecionada) return;
-
-    // Se a página não foi inicializada com os dados do médico, não prossegue
-    if (!medicoIdInput.value) {
-        updateStatus('Erro: Dados do médico não carregados. Recarregue a página com o link do convite.', 'danger');
-        return;
-    }
-
-    showLoading(true);
-    updateStatus('Buscando horários disponíveis...', 'info');
-
+// 4. Gerar Convite
+async function gerarConviteAtivacao(medicoId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/janelas?data=${dataSelecionada}`);
-        const data = await response.json();
-
-        if (response.ok) {
-            renderSlots(data.janelas, data.dataBusca);
-        } else {
-            updateStatus(`Erro ao buscar: ${data.erro}`, 'danger');
-        }
-    } catch (error) {
-        updateStatus('Erro de conexão com o servidor.', 'danger');
-        console.error('Fetch error:', error);
-    } finally {
-        showLoading(false);
-    }
-}
-
-/**
- * 3. Envia o agendamento para o backend.
- */
-async function handleAgendamento() {
-    if (!selectedSlot) return;
-
-    // Captura os dados AUTOCAPTURADOS
-    const medicoId = medicoIdInput.value;
-    const medicoTelefone = medicoTelefoneInput.value;
-    const medicoCrm = medicoCrmInput.value;
-
-    if (!medicoId || !medicoTelefone) {
-        updateStatus('Erro: Informações do médico não carregadas. Impossível agendar.', 'danger');
-        return;
-    }
-
-    showLoading(true);
-    updateStatus('Confirmando seu agendamento...', 'primary');
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/agendar`, {
+        const response = await fetch(`/api/ativacoes-senha/gerar-convite/${medicoId}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                medicoId: medicoId,
-                dataAgendamento: selectedSlot.data,
-                horarioAgendamento: selectedSlot.horario,
-                telefoneMedico: medicoTelefone, // Enviado para notificação final
-                crm: medicoCrm // Enviado para gerar o usuario_acesso
-            })
+            headers: { 'Authorization': `Bearer ${getToken()}` }
         });
-
-        const data = await response.json();
+        const result = await response.json();
 
         if (response.ok) {
-            updateStatus(data.mensagem, 'success');
-            // Recarrega os slots para refletir o horário ocupado
-            fetchSlots();
-        } else if (response.status === 409) {
-            updateStatus(data.erro, 'warning'); // Horário ocupado (Race condition)
-            fetchSlots(); // Recarrega para que o slot desapareça
+            const mensagem = encodeURIComponent(`Olá Dr. ${result.medicoNome}, para ativar sua senha no Hospital M'Boi precisamos de uma breve call. Escolha seu horário aqui: ${result.linkSelecao}`);
+            window.open(`https://wa.me/55${result.medicoTelefone.replace(/\D/g, '')}?text=${mensagem}`, '_blank');
+            loadAtivacoes();
         } else {
-            updateStatus(`Falha no agendamento: ${data.erro}`, 'danger');
+            alert(result.erro || 'Erro ao gerar convite');
         }
-    } catch (error) {
-        updateStatus('Erro de comunicação com o servidor durante o agendamento.', 'danger');
-        console.error('Agendamento error:', error);
-    } finally {
-        showLoading(false);
+    } catch (err) { 
+        alert('Erro ao gerar convite'); 
     }
 }
 
-// --- EVENT LISTENERS E INICIALIZAÇÃO ---
+// 5. Modal Meet
+function abrirModalMeet(id, telefone, nome, linkMeet) {
+    if (!meetModal) return;
+    meetModal.style.display = 'block';
+    
+    const inputLink = document.getElementById('input-link-meet');
+    if (inputLink) inputLink.value = linkMeet || '';
 
-// Busca slots ao mudar a data
-dataSelecao.addEventListener('change', fetchSlots);
+    document.getElementById('btn-confirmar-envio-meet').onclick = async () => {
+        const msg = encodeURIComponent(`Olá Dr. ${nome}, link da call M'Boi: ${linkMeet}`);
+        window.open(`https://wa.me/55${telefone}?text=${msg}`, '_blank');
+        
+        if (confirm("Marcar como CONCLUÍDO?")) {
+            await finalizarAtivacao(id, 'CONCLUIDO');
+        }
+        meetModal.style.display = 'none';
+    };
+}
 
-// Agendar ao clicar no botão
-btnAgendar.addEventListener('click', handleAgendamento);
+async function finalizarAtivacao(id, statusFinal) {
+    try {
+        await fetch(`/api/ativacoes-senha/finalizar/${id}`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ statusFinal })
+        });
+        loadAtivacoes();
+    } catch (err) { 
+        console.error('Erro ao finalizar:', err); 
+    }
+}
 
-// Inicializa a página lendo o token e buscando os dados
-document.addEventListener('DOMContentLoaded', initializePage);
+document.querySelectorAll('.close-button, .close-button-meet').forEach(btn => {
+    btn.onclick = () => { if (meetModal) meetModal.style.display = 'none'; };
+});
+
+document.addEventListener('DOMContentLoaded', loadAtivacoes);
+if (searchButton) searchButton.addEventListener('click', loadAtivacoes);
